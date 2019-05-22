@@ -309,19 +309,6 @@ class Board:
 
         return ret_str
 
-    # This returns a string in the format '10010110101...', not '1, 0, 0, 1, 0, ...'
-    def convert_compact_string_to_normal(self, vec_str):
-        terms = vec_str.split(':')
-        true_terms = ''
-        for term in terms:
-            true_term = bin(int(term))[2:]
-            while len(true_term) != 32:
-                true_term = '0' + true_term
-
-            true_terms += true_term
-
-        return true_terms
-
     def get_list_of_possible_moves_in_coordinate_form(self, ignore_check):
         possible_moves = []
         for row in self.board:
@@ -403,3 +390,17 @@ def update_move_and_get_board_copy(board, piece, i, j):
         else:
             ChessLogic.update_move_piece(board=temp_board_copy, piece=piece_copy, i=i, j=j)
     return temp_board_copy
+
+
+# This returns a string in the format '10010110101...', not '1, 0, 0, 1, 0, ...'
+def convert_compact_string_to_normal(vec_str):
+    terms = vec_str.split(':')
+    true_terms = ''
+    for term in terms:
+        true_term = bin(int(term))[2:]
+        while len(true_term) != 32:
+            true_term = '0' + true_term
+
+        true_terms += true_term
+
+    return true_terms
