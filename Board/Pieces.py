@@ -11,30 +11,33 @@ class Pawn:
         self.jumped_two = False
         self.symbol = 'p'
 
-    def get_moves(self, board):
+    def get_moves(self, board, ignore_check):
         moves = []
         if self.color == 0:
-            moves.append(self.get_move(board, self.i + 1, self.j))
-            moves.append(self.get_move(board, self.i + 1, self.j + 1))
-            moves.append(self.get_move(board, self.i + 1, self.j - 1))
-            moves.append(self.get_move(board, self.i + 2, self.j))
+            moves.append(self.get_move(board, self.i + 1, self.j, ignore_check))
+            moves.append(self.get_move(board, self.i + 1, self.j + 1, ignore_check))
+            moves.append(self.get_move(board, self.i + 1, self.j - 1, ignore_check))
+            moves.append(self.get_move(board, self.i + 2, self.j, ignore_check))
         else:
-            moves.append(self.get_move(board, self.i - 1, self.j))
-            moves.append(self.get_move(board, self.i - 1, self.j + 1))
-            moves.append(self.get_move(board, self.i - 1, self.j - 1))
-            moves.append(self.get_move(board, self.i - 2, self.j))
+            moves.append(self.get_move(board, self.i - 1, self.j, ignore_check))
+            moves.append(self.get_move(board, self.i - 1, self.j + 1, ignore_check))
+            moves.append(self.get_move(board, self.i - 1, self.j - 1, ignore_check))
+            moves.append(self.get_move(board, self.i - 2, self.j, ignore_check))
         return [x for x in moves if x is not None]
 
-    def get_move(self, board, i, j):
-        if self.can_move(board, i, j):
+    def get_move(self, board, i, j, ignore_check):
+        if board.can_move_without_self_check(self, i, j):
             if not isinstance(board.board[i][j], NullPiece) or self.is_en_passant(board, i, j):
-                return get_coordinate_move(self, i, j, capture=True)
+                return get_coordinate_move(self, i, j, capture=True, board=board, ignore_check=ignore_check)
             else:
-                return get_coordinate_move(self, i, j, capture=False)
+                return get_coordinate_move(self, i, j, capture=False, board=board, ignore_check=ignore_check)
         return None
 
     # Can move returns a boolean if the piece can move to the square dependent on board state
     def can_move(self, board, i, j):
+        if i > 7 or j > 7 or i < 0 or j < 0:
+            return False
+
         if self.i == i and self.j == j:
             return False
 
@@ -122,20 +125,21 @@ class Bishop:
         self.last_turn_moved = -1
         self.symbol = 'B'
 
-    def get_moves(self, board):
-        moves = []
+    def get_moves(self, board, ignore_check):
+        return get_diagonal_moves(self, board, ignore_check)
 
-
-
-    def get_move(self, board, i, j):
-        if self.can_move(board, i, j):
+    def get_move(self, board, i, j, ignore_check):
+        if board.can_move_without_self_check(self, i, j):
             if not isinstance(board.board[i][j], NullPiece):
-                return 'B' + get_coordinate_move(self, i, j, capture=True)
+                return 'B' + get_coordinate_move(self, i, j, capture=True, board=board, ignore_check=ignore_check)
             else:
-                return 'B' + get_coordinate_move(self, i, j, capture=False)
+                return 'B' + get_coordinate_move(self, i, j, capture=False, board=board, ignore_check=ignore_check)
         return None
 
     def can_move(self, board, i, j):
+        if i > 7 or j > 7 or i < 0 or j < 0:
+            return False
+
         if self.i == i and self.j == j:
             return False
 
@@ -159,15 +163,25 @@ class Knight:
         self.last_turn_moved = -1
         self.symbol = 'N'
 
-    def get_move(self, board, i, j):
-        if self.can_move(board, i, j):
+    def get_moves(self, board, ignore_check):
+        moves = [self.get_move(board, self.i + 2, self.j + 1, ignore_check), self.get_move(board, self.i + 2, self.j - 1, ignore_check),
+                 self.get_move(board, self.i + 1, self.j - 2, ignore_check), self.get_move(board, self.i - 1, self.j - 2, ignore_check),
+                 self.get_move(board, self.i - 2, self.j - 1, ignore_check), self.get_move(board, self.i - 2, self.j + 1, ignore_check),
+                 self.get_move(board, self.i - 1, self.j + 2, ignore_check), self.get_move(board, self.i + 1, self.j + 2, ignore_check)]
+        return [x for x in moves if x is not None]
+
+    def get_move(self, board, i, j, ignore_check):
+        if board.can_move_without_self_check(self, i, j):
             if not isinstance(board.board[i][j], NullPiece):
-                return 'N' + get_coordinate_move(self, i, j, capture=True)
+                return 'N' + get_coordinate_move(self, i, j, capture=True, board=board, ignore_check=ignore_check)
             else:
-                return 'N' + get_coordinate_move(self, i, j, capture=False)
+                return 'N' + get_coordinate_move(self, i, j, capture=False, board=board, ignore_check=ignore_check)
         return None
 
     def can_move(self, board, i, j):
+        if i > 7 or j > 7 or i < 0 or j < 0:
+            return False
+
         if self.i == i and self.j == j:
             return False
 
@@ -194,15 +208,21 @@ class Rook:
         self.last_turn_moved = -1
         self.symbol = 'R'
 
-    def get_move(self, board, i, j):
-        if self.can_move(board, i, j):
+    def get_moves(self, board, ignore_check):
+        return get_forward_and_sideways_moves(self, board, ignore_check=ignore_check)
+
+    def get_move(self, board, i, j, ignore_check):
+        if board.can_move_without_self_check(self, i, j):
             if not isinstance(board.board[i][j], NullPiece):
-                return 'R' + get_coordinate_move(self, i, j, capture=True)
+                return 'R' + get_coordinate_move(self, i, j, capture=True, board=board, ignore_check=ignore_check)
             else:
-                return 'R' + get_coordinate_move(self, i, j, capture=False)
+                return 'R' + get_coordinate_move(self, i, j, capture=False, board=board, ignore_check=ignore_check)
         return None
 
     def can_move(self, board, i, j):
+        if i > 7 or j > 7 or i < 0 or j < 0:
+            return False
+
         if self.i == i and self.j == j:
             return False
 
@@ -226,15 +246,21 @@ class Queen:
         self.last_turn_moved = -1
         self.symbol = 'Q'
 
-    def get_move(self, board, i, j):
-        if self.can_move(board, i, j):
+    def get_moves(self, board, ignore_check):
+        return get_forward_and_sideways_moves(self, board, ignore_check) + get_diagonal_moves(self, board, ignore_check)
+
+    def get_move(self, board, i, j, ignore_check):
+        if board.can_move_without_self_check(self, i, j):
             if not isinstance(board.board[i][j], NullPiece):
-                return 'Q' + get_coordinate_move(self, i, j, capture=True)
+                return 'Q' + get_coordinate_move(self, i, j, capture=True, board=board, ignore_check=ignore_check)
             else:
-                return 'Q' + get_coordinate_move(self, i, j, capture=False)
+                return 'Q' + get_coordinate_move(self, i, j, capture=False, board=board, ignore_check=ignore_check)
         return None
 
     def can_move(self, board, i, j):
+        if i > 7 or j > 7 or i < 0 or j < 0:
+            return False
+
         if self.i == i and self.j == j:
             return False
 
@@ -258,15 +284,25 @@ class King:
         self.last_turn_moved = -1
         self.symbol = 'K'
 
-    def get_move(self, board, i, j):
-        if self.can_move(board, i, j):
+    def get_moves(self, board, ignore_check):
+        moves = [self.get_move(board, self.i + 1, self.j, ignore_check), self.get_move(board, self.i, self.j + 1, ignore_check),
+                 self.get_move(board, self.i + 1, self.j + 1, ignore_check), self.get_move(board, self.i + 1, self.j - 1, ignore_check),
+                 self.get_move(board, self.i - 1, self.j, ignore_check), self.get_move(board, self.i, self.j - 1, ignore_check),
+                 self.get_move(board, self.i - 1, self.j - 1, ignore_check), self.get_move(board, self.i - 1, self.j + 1, ignore_check)]
+        return [x for x in moves if x is not None]
+
+    def get_move(self, board, i, j, ignore_check):
+        if board.can_move_without_self_check(self, i, j):
             if not isinstance(board.board[i][j], NullPiece):
-                return 'K' + get_coordinate_move(self, i, j, capture=True)
+                return 'K' + get_coordinate_move(self, i, j, capture=True, board=board, ignore_check=ignore_check)
             else:
-                return 'K' + get_coordinate_move(self, i, j, capture=False)
+                return 'K' + get_coordinate_move(self, i, j, capture=False, board=board, ignore_check=ignore_check)
         return None
 
     def can_move(self, board, i, j):
+        if i > 7 or j > 7 or i < 0 or j < 0:
+            return False
+
         if self.i == i and self.j == j:
             return False
 
@@ -290,7 +326,10 @@ class NullPiece:
         self.last_turn_moved = -1
         self.symbol = '_'
 
-    def get_move(self, board, i, j):
+    def get_moves(self, board, ignore_check):
+        return []
+
+    def get_move(self, board, i, j, ignore_check):
         return None
 
     def can_move(self, board, i, j):
@@ -390,10 +429,70 @@ def can_move_forward_and_sideways(piece, board, i, j):
     return True
 
 
-def get_coordinate_move(piece, i, j, capture):
+def get_diagonal_moves(piece, board, ignore_check):
+    moves = []
+    k = 1
+    while piece.i + k < 8 and piece.j + k < 8:
+        moves.append(piece.get_move(board, piece.i + k, piece.j + k, ignore_check))
+        k += 1
+
+    k = 1
+    while piece.i + k < 8 and piece.j - k >= 0:
+        moves.append(piece.get_move(board, piece.i + k, piece.j - k, ignore_check))
+        k += 1
+
+    k = 1
+    while piece.i - k >= 0 and piece.j - k >= 0:
+        moves.append(piece.get_move(board, piece.i - k, piece.j - k, ignore_check))
+        k += 1
+
+    k = 1
+    while piece.i - k >= 0 and piece.j + k < 8:
+        moves.append(piece.get_move(board, piece.i - k, piece.j + k, ignore_check))
+        k += 1
+    return [x for x in moves if x is not None]
+
+
+def get_forward_and_sideways_moves(piece, board, ignore_check):
+    moves = []
+    k = 1
+    while piece.i + k < 8:
+        moves.append(piece.get_move(board, piece.i + k, piece.j, ignore_check))
+        k += 1
+
+    k = 1
+    while piece.i - k >= 0:
+        moves.append(piece.get_move(board, piece.i - k, piece.j, ignore_check))
+        k += 1
+
+    k = 1
+    while piece.j + k < 8:
+        moves.append(piece.get_move(board, piece.i, piece.j + k, ignore_check))
+        k += 1
+
+    k = 1
+    while piece.j - k >= 0:
+        moves.append(piece.get_move(board, piece.i, piece.j - k, ignore_check))
+        k += 1
+
+    return [x for x in moves if x is not None]
+
+
+def get_coordinate_move(piece, i, j, capture, board, ignore_check):
+    move_str = ''
+
     if capture:
-        return str(Board.Board.col_index_to_algebra[piece.j]) + str(Board.Board.row_index_to_algebra[piece.i]) + 'x' + \
+        move_str += str(Board.Board.col_index_to_algebra[piece.j]) + str(Board.Board.row_index_to_algebra[piece.i]) + 'x' + \
             str(Board.Board.col_index_to_algebra[j]) + str(Board.Board.row_index_to_algebra[i])
     else:
-        return str(Board.Board.col_index_to_algebra[piece.j]) + str(Board.Board.row_index_to_algebra[piece.i]) + \
+        move_str += str(Board.Board.col_index_to_algebra[piece.j]) + str(Board.Board.row_index_to_algebra[piece.i]) + \
                str(Board.Board.col_index_to_algebra[j]) + str(Board.Board.row_index_to_algebra[i])
+
+    if not ignore_check:
+        move_result = board.move_is_check_or_checkmate(piece, i, j)
+        if move_result == 2:
+            move_str += '#'
+        elif move_result == 1:
+            move_str += '+'
+
+    return move_str

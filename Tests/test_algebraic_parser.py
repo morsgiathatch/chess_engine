@@ -6,9 +6,9 @@ if __name__ == '__main__':
     printout = True
     cwd = os.getcwd()
     parent = os.path.join(cwd, os.path.join(os.path.dirname(__file__)))
-    game_path = parent + "/Parser/parsed_games/black_games_won/black_games_won.txt"
-    # game_path = parent + "/Parser/parsed_games/white_games_won/white_games_won.txt"
-    # game_path = parent + "/Parser/parsed_games/tied_games/tie.txt"
+    game_path = parent + "/../Parser/parsed_games/black_games_won/black_games_won.txt"
+    # game_path = parent + "/../Parser/parsed_games/white_games_won/white_games_won.txt"
+    # game_path = parent + "/../Parser/parsed_games/tied_games/tie.txt"
 
     games = []
     with open(game_path, 'r') as f:
@@ -29,7 +29,7 @@ if __name__ == '__main__':
             print("\nTurn %d: %s" % (board.turn_number, 'Begin game'))
             print(board_str)
         for i, move in enumerate(moves):
-            board.read_and_update(algebraic_move=move, move_index=i)
+            board.read_and_update(algebraic_move=move)
             temp_str = Board.get_board_str(board)
             if temp_str == board_str:
                 print('Board game unchanged at turn %d, %s' % (board.turn_number, move))

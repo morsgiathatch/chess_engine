@@ -16,7 +16,6 @@ import re
 #   0 1 2 3 4 5 6 7    White side
 
 class Board:
-
     algebra_to_index_map = {'a': 0, '1': 0, 'b': 1, '2': 1, 'c': 2, '3': 2, 'd': 3, '4': 3, 'e': 4, '5': 4, 'f': 5,
                             '6': 5, 'g': 6, '7': 6, 'h': 7, '8': 7}
     col_index_to_algebra = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
@@ -56,8 +55,8 @@ class Board:
         self.set_references()
 
     # Read chess algebra and update board
-    def read_and_update(self, algebraic_move, move_index):
-        color = move_index % 2
+    def read_and_update(self, algebraic_move):
+        color = self.turn_number % 2
         # Move pawn
         if str(algebraic_move[0]).islower():
             ChessLogic.move_pawn(algebraic_move, self, color, turn_number=self.turn_number)
@@ -76,11 +75,6 @@ class Board:
             raise ValueError('Invalid algebraic notation')
 
         self.turn_number += 1
-        self.vectorize()
-
-    # Helper to read_and_update
-    def update(self, piece, i, j):
-        self.board[i][j] = copy.deepcopy(piece)
         self.vectorize()
 
     # Update vectorization of board
@@ -280,27 +274,7 @@ class Board:
             return False
 
         # Make temporary copy of board, move piece and see if opponent can check
-        temp_board_copy = copy.deepcopy(self)
-        piece_copy = temp_board_copy.board[piece.i][piece.j]
-        if not isinstance(temp_board_copy.board[i][j], Pieces.NullPiece):
-            ChessLogic.update_capture_piece(board=temp_board_copy, attk_piece=piece_copy,
-                                            def_piece=temp_board_copy.board[i][j],
-                                            turn_number=temp_board_copy.turn_number)
-        else:
-            # Check if not en passant
-            if isinstance(piece_copy, Pieces.Pawn) and piece_copy.is_en_passant(board=temp_board_copy, i=i, j=j):
-                if color == 0:
-                    ChessLogic.update_en_passant(board=temp_board_copy, attk_piece=piece_copy,
-                                                 def_piece=temp_board_copy.board[i - 1][j],
-                                                 turn_number=temp_board_copy.turn_number, color=color)
-                else:
-                    ChessLogic.update_en_passant(board=temp_board_copy, attk_piece=piece_copy,
-                                                 def_piece=temp_board_copy.board[i + 1][j],
-                                                 turn_number=temp_board_copy.turn_number, color=color)
-
-            else:
-                ChessLogic.update_move_piece(board=temp_board_copy, piece=piece_copy, i=i, j=j,
-                                             turn_number=temp_board_copy.turn_number)
+        temp_board_copy = update_move_and_get_board_copy(self, piece, i, j)
         if color == 0:
             king = temp_board_copy.white_king[0]
         else:
@@ -311,11 +285,8 @@ class Board:
                 if isinstance(piece, Pieces.NullPiece):
                     continue
                 if piece.color != color and piece.can_move(temp_board_copy, king.i, king.j):
-                    del temp_board_copy
                     return False
 
-        del temp_board_copy
-        del piece_copy
         return True
 
     def set_empty(self, i, j):
@@ -351,22 +322,49 @@ class Board:
 
         return true_terms
 
-    def get_list_of_possible_moves_in_coordinate_form(self):
+    def get_list_of_possible_moves_in_coordinate_form(self, ignore_check):
         possible_moves = []
         for row in self.board:
             for piece in row:
-                for i in range(0, 8):
-                    for j in range(0, 8):
-                        if self.can_move_without_self_check(piece, i, j) and piece.color == self.turn_number % 2:
-                            move = piece.get_move(self, i, j)
-                            if move is not None:
-                                possible_moves.append(move)
+                if not isinstance(piece, Pieces.NullPiece) and piece.color == self.turn_number % 2:
+                    possible_moves += piece.get_moves(self, ignore_check)
 
         return possible_moves
 
     def get_list_of_possible_moves_in_algebraic_form(self):
-        list_of_possible_moves_in_coordinate_form = self.get_list_of_possible_moves_in_coordinate_form()
+        list_of_possible_moves_in_coordinate_form = self.get_list_of_possible_moves_in_coordinate_form(ignore_check=False)
         return ChessLogic.convert_coordinate_form_to_algebraic_form(list_of_possible_moves_in_coordinate_form)
+
+    # Return 2 if checkmate, 1 if just check, 0 if nothing
+    def move_is_check_or_checkmate(self, piece, i, j):
+        color = piece.color
+        board_copy = update_move_and_get_board_copy(self, piece, i, j)
+
+        if color == 0:
+            king = board_copy.black_king[0]
+        else:
+            king = board_copy.white_king[0]
+
+        # First check for check
+        is_check = False
+        for row in board_copy.board:
+            for piece in row:
+                if isinstance(piece, Pieces.NullPiece):
+                    continue
+                if piece.color == color and piece.can_move(board_copy, king.i, king.j):
+                    is_check = True
+
+        # now check for mate
+        if is_check:
+            available_moves = board_copy.get_list_of_possible_moves_in_coordinate_form(ignore_check=True)
+            # checkmate
+            if len(available_moves) == 0:
+                return 2
+            # check
+            else:
+                return 1
+        else:
+            return 0
 
 
 # Get new board from vectorization
@@ -383,3 +381,25 @@ def get_board_str(board):
                 print_str += '|\n'
 
     return print_str
+
+
+def update_move_and_get_board_copy(board, piece, i, j):
+    color = piece.color
+    temp_board_copy = copy.deepcopy(board)
+    piece_copy = temp_board_copy.board[piece.i][piece.j]
+    if not isinstance(temp_board_copy.board[i][j], Pieces.NullPiece):
+        ChessLogic.update_capture_piece(board=temp_board_copy, attk_piece=piece_copy,
+                                        def_piece=temp_board_copy.board[i][j])
+    else:
+        # Check if not en passant
+        if isinstance(piece_copy, Pieces.Pawn) and piece_copy.is_en_passant(board=temp_board_copy, i=i, j=j):
+            if color == 0:
+                ChessLogic.update_en_passant(board=temp_board_copy, attk_piece=piece_copy,
+                                             def_piece=temp_board_copy.board[i - 1][j], color=color)
+            else:
+                ChessLogic.update_en_passant(board=temp_board_copy, attk_piece=piece_copy,
+                                             def_piece=temp_board_copy.board[i + 1][j], color=color)
+
+        else:
+            ChessLogic.update_move_piece(board=temp_board_copy, piece=piece_copy, i=i, j=j)
+    return temp_board_copy

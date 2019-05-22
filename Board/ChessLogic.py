@@ -136,27 +136,29 @@ def castle(algebraic_move, board, color, turn_number):
         update_move_piece(board=board, piece=board.board[i][7], i=i, j=5, turn_number=turn_number)
 
 
-def update_move_piece(board, piece, i, j, turn_number):
+def update_move_piece(board, piece, i, j):
     if isinstance(piece, Pieces.Pawn) and piece.i - i == 2:
         piece.jumped_two = True
     board.set_empty(piece.i, piece.j)
     board.board[i][j] = piece
     piece.i = i
     piece.j = j
-    piece.last_turn_moved = turn_number
+    piece.last_turn_moved = board.turn_number
+    board.turn_number += 1
 
 
-def update_capture_piece(board, attk_piece, def_piece, turn_number):
+def update_capture_piece(board, attk_piece, def_piece):
     board.delete_piece_from_references(def_piece.i, def_piece.j, def_piece.color)
     board.set_empty(attk_piece.i, attk_piece.j)
     board.board[def_piece.i][def_piece.j] = attk_piece
     attk_piece.i = def_piece.i
     attk_piece.j = def_piece.j
-    attk_piece.last_turn_moved = turn_number
+    attk_piece.last_turn_moved = board.turn_number
     del def_piece
+    board.turn_number += 1
 
 
-def update_en_passant(board, attk_piece, def_piece, turn_number, color):
+def update_en_passant(board, attk_piece, def_piece, color):
     board.delete_piece_from_references(def_piece.i, def_piece.j, def_piece.color)
     board.set_empty(attk_piece.i, attk_piece.j)
     board.set_empty(def_piece.i, def_piece.j)
@@ -169,8 +171,9 @@ def update_en_passant(board, attk_piece, def_piece, turn_number, color):
         attk_piece.i = def_piece.i - 1
         attk_piece.j = def_piece.j
 
-    attk_piece.last_turn_moved = turn_number
+    attk_piece.last_turn_moved = board.turn_number
     del def_piece
+    board.turn_number += 1
 
 
 def convert_coordinate_form_to_algebraic_form(coordinate_form_moves):

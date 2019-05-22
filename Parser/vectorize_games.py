@@ -6,9 +6,9 @@ import sys
 if __name__ == '__main__':
     cwd = os.getcwd()
     parent = os.path.join(cwd, os.path.join(os.path.dirname(__file__)))
-    game_path = parent + "/Parser/parsed_games/white_games_won/white_games_won.txt"
-    # game_path = parent + "/Parser/parsed_games/black_games_won/black_games_won.txt"
-    # game_path = parent + "/Parser/parsed_games/tied_games/tie.txt"
+    game_path = parent + "/parsed_games/white_games_won/white_games_won.txt"
+    # game_path = parent + "/parsed_games/black_games_won/black_games_won.txt"
+    # game_path = parent + "/parsed_games/tied_games/tie.txt"
 
     games = []
     with open(game_path, 'r') as f:
@@ -23,12 +23,12 @@ if __name__ == '__main__':
         sys.stdout.write('\rVectorizing games: %d / %d' % (k + 1, len(games)))
 
         vectorized_game_str = ''
-        with open(parent + "/Parser/vectorized_games/white_games_won/white_games_won.txt", 'a+') as f:
-        # with open(parent + "/Parser/vectorized_games/black_games_won/black_games_won.txt", 'a+') as f:
-        # with open(parent + "/Parser/vectorized_games/tied_games/tied_games.txt", 'a+') as f:
+        with open(parent + "/vectorized_games/white_games_won/white_games_won.txt", 'a+') as f:
+        # with open(parent + "/vectorized_games/black_games_won/black_games_won.txt", 'a+') as f:
+        # with open(parent + "/vectorized_games/tied_games/tied_games.txt", 'a+') as f:
 
             for i, move in enumerate(moves):
-                board.read_and_update(algebraic_move=move, move_index=i)
+                board.read_and_update(algebraic_move=move)
                 vectorized_board_str = board.get_compact_vector_string()
                 vectorized_game_str += vectorized_board_str
                 # Check that composing vectorization with inverse operation results in original string

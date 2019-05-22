@@ -6,9 +6,9 @@ if __name__ == '__main__':
     printout = True
     cwd = os.getcwd()
     parent = os.path.join(cwd, os.path.join(os.path.dirname(__file__)))
-    game_path = parent + "/Parser/parsed_games/black_games_won/black_games_won.txt"
-    # game_path = parent + "/Parser/parsed_games/white_games_won/white_games_won.txt"
-    # game_path = parent + "/Parser/parsed_games/tied_games/tie.txt"
+    game_path = parent + "/../Parser/parsed_games/black_games_won/black_games_won.txt"
+    # game_path = parent + "/../Parser/parsed_games/white_games_won/white_games_won.txt"
+    # game_path = parent + "/../Parser/parsed_games/tied_games/tie.txt"
 
     games = []
     with open(game_path, 'r') as f:
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         for i, move in enumerate(moves):
             possible_moves = board.get_list_of_possible_moves_in_algebraic_form()
             print('Possible moves for next move are ', possible_moves)
-            board.read_and_update(algebraic_move=move, move_index=i)
+            board.read_and_update(algebraic_move=move)
             if printout:
                 board_str = Board.get_board_str(board)
                 print("\nTurn %d: %s" % (board.turn_number, move))

@@ -3,3 +3,4 @@ Parser/parsed_games
 Parser/vectorized_games
 venv/
 .idea/
+Board/__pycache__
