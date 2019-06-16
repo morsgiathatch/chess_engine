@@ -63,18 +63,17 @@ class Board:
 
         # Move bureaucratic piece
         elif re.match('[NBRQK]', algebraic_move[0]):
-            ChessLogic.move_bureaucratic_piece(algebraic_move=algebraic_move, board=self, color=color,
-                                               turn_number=self.turn_number)
+            ChessLogic.move_bureaucratic_piece(algebraic_move=algebraic_move, board=self, color=color)
 
         # Castle
         elif algebraic_move[0] == 'O':
-            ChessLogic.castle(algebraic_move=algebraic_move, board=self, color=color, turn_number=self.turn_number)
+            ChessLogic.castle(algebraic_move=algebraic_move, board=self, color=color)
 
         # Parse error?
         else:
             raise ValueError('Invalid algebraic notation')
 
-        self.turn_number += 1
+        # self.turn_number += 1
         self.vectorize()
 
     # Update vectorization of board
@@ -313,9 +312,12 @@ class Board:
         possible_moves = []
         for row in self.board:
             for piece in row:
+                if isinstance(piece, Pieces.King):
+                    a = 3
                 if not isinstance(piece, Pieces.NullPiece) and piece.color == self.turn_number % 2:
                     possible_moves += piece.get_moves(self, ignore_check)
 
+        possible_moves = list(set(possible_moves))
         return possible_moves
 
     def get_list_of_possible_moves_in_algebraic_form(self):

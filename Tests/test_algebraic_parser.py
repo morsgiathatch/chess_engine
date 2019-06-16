@@ -19,8 +19,8 @@ if __name__ == '__main__':
             games.append(moves)
     f.close()
     for k, moves in enumerate(games):
-        # if k != 1:
-        #     continue
+        if k != 1:
+            continue
 
         board = Board.Board()
         board_str = Board.get_board_str(board)

@@ -6,8 +6,8 @@ if __name__ == '__main__':
     printout = True
     cwd = os.getcwd()
     parent = os.path.join(cwd, os.path.join(os.path.dirname(__file__)))
-    game_path = parent + "/../Parser/parsed_games/black_games_won/black_games_won.txt"
-    # game_path = parent + "/../Parser/parsed_games/white_games_won/white_games_won.txt"
+    # game_path = parent + "/../Parser/parsed_games/black_games_won/black_games_won.txt"
+    game_path = parent + "/../Parser/parsed_games/white_games_won/white_games_won.txt"
     # game_path = parent + "/../Parser/parsed_games/tied_games/tie.txt"
 
     games = []
@@ -19,7 +19,7 @@ if __name__ == '__main__':
             games.append(moves)
     f.close()
     for k, moves in enumerate(games):
-        if k != 1:
+        if k != 3:
             continue
 
         board = Board.Board()
@@ -34,10 +34,14 @@ if __name__ == '__main__':
             print(board_str)
         for i, move in enumerate(moves):
             possible_moves = board.get_list_of_possible_moves_in_algebraic_form()
-            print('Possible moves for next move are ', possible_moves)
             board.read_and_update(algebraic_move=move)
             if printout:
+                print('Possible moves for next move are ', possible_moves)
                 board_str = Board.get_board_str(board)
                 print("\nTurn %d: %s" % (board.turn_number, move))
                 print(board_str)
+                if board.turn_number == 35:
+                    a = 3
+                if move not in possible_moves:
+                    raise ValueError('Move %s not in possible moves: turn %s' % (move, board.turn_number))
         del board

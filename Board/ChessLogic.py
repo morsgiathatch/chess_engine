@@ -11,7 +11,7 @@ def move_pawn(algebraic_move, board, color, turn_number):
         j = Board.Board.algebra_to_index_map[algebraic_move[0]]
         piece = board.get_piece_that_can_move_to_index(board.get_references('p', color), i, j,
                                                        end_args=algebraic_move[2:])
-        update_move_piece(board=board, piece=piece, i=i, j=j, turn_number=turn_number)
+        update_move_piece(board=board, piece=piece, i=i, j=j)
 
     # pawn capture with no promotion,
     elif re.match('[a-h]x[a-h][1-8]', algebraic_move[0: 4]) and '=' not in algebraic_move:
@@ -24,13 +24,13 @@ def move_pawn(algebraic_move, board, color, turn_number):
                                                        pos_args=pos_args)
         # Take into account en passant
         if color == 0 and isinstance(board.board[i][j], Pieces.NullPiece):
-            update_en_passant(board=board, attk_piece=piece, def_piece=board.board[i - 1][j], turn_number=turn_number,
+            update_en_passant(board=board, attk_piece=piece, def_piece=board.board[i - 1][j],
                               color=color)
         elif color == 1 and isinstance(board.board[i][j], Pieces.NullPiece):
-            update_en_passant(board=board, attk_piece=piece, def_piece=board.board[i + 1][j], turn_number=turn_number,
+            update_en_passant(board=board, attk_piece=piece, def_piece=board.board[i + 1][j],
                               color=color)
         else:
-            update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j], turn_number=turn_number)
+            update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j])
 
     # pawn promotion without capture
     elif re.match('[a-h][1-8]=', algebraic_move[0: 3]):
@@ -49,14 +49,14 @@ def move_pawn(algebraic_move, board, color, turn_number):
         end_args = algebraic_move[6:]
         piece = board.get_piece_that_can_move_to_index(board.get_references('p', color), i, j, end_args=end_args,
                                                        pos_args=pos_args)
-        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j], turn_number=turn_number)
+        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j])
         board.delete_piece_from_references(i, j, color)
         board.get_promoted_piece(algebraic_move[5], i, j, color, turn_number=turn_number)
         del piece
 
 
 # Move any bureaucratic piece. I.e., N, B, R, Q, K
-def move_bureaucratic_piece(algebraic_move, board, color, turn_number):
+def move_bureaucratic_piece(algebraic_move, board, color):
     # Go case by case
     # Move piece with no capture and no ambiguity
     if re.match('[NBRQK][a-h][1-8]', algebraic_move) and len(algebraic_move) < 5 and 'x' not in algebraic_move:
@@ -64,7 +64,7 @@ def move_bureaucratic_piece(algebraic_move, board, color, turn_number):
         j = Board.Board.algebra_to_index_map[algebraic_move[1]]
         piece = board.get_piece_that_can_move_to_index(board.get_references(algebraic_move[0], color), i, j,
                                                        end_args=algebraic_move[3:])
-        update_move_piece(board=board, piece=piece, i=i, j=j, turn_number=turn_number)
+        update_move_piece(board=board, piece=piece, i=i, j=j)
 
     # Move piece with simple ambiguity without capture
     elif re.match('[NBRQK][a-h][a-h][1-8]', algebraic_move) or re.match('[NBRQK][1-8][a-h][1-8]', algebraic_move):
@@ -73,7 +73,7 @@ def move_bureaucratic_piece(algebraic_move, board, color, turn_number):
         piece = board.get_piece_that_can_move_to_index(board.get_references(algebraic_move[0], color), i, j,
                                                        pos_args=algebraic_move[1],
                                                        end_args=algebraic_move[4:])
-        update_move_piece(board=board, piece=piece, i=i, j=j, turn_number=turn_number)
+        update_move_piece(board=board, piece=piece, i=i, j=j)
 
     # Move piece with complex ambiguity without capture, this should almost never occur
     elif re.match('[NBRQK][a-h][1-8][a-h][1-8]', algebraic_move):
@@ -82,7 +82,7 @@ def move_bureaucratic_piece(algebraic_move, board, color, turn_number):
         piece = board.get_piece_that_can_move_to_index(board.get_references(algebraic_move[0], color), i, j,
                                                        pos_args=algebraic_move[1:3],
                                                        end_args=algebraic_move[5:])
-        update_move_piece(board=board, piece=piece, i=i, j=j, turn_number=turn_number)
+        update_move_piece(board=board, piece=piece, i=i, j=j)
 
     # Move piece and capture with no ambiguity
     elif re.match('[NBRQK]x[a-h][1-8]', algebraic_move):
@@ -92,7 +92,7 @@ def move_bureaucratic_piece(algebraic_move, board, color, turn_number):
         end_args = algebraic_move[4:]
         piece = board.get_piece_that_can_move_to_index(board.get_references(algebraic_move[0], color), i, j,
                                                        end_args=end_args)
-        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j], turn_number=turn_number)
+        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j])
 
     # Move piece and capture with simple ambiguity
     elif re.match('[NBRQK][a-h]x[a-h][1-8]', algebraic_move) or re.match('[NBRQK][1-8]x[a-h][1-8]', algebraic_move):
@@ -103,7 +103,7 @@ def move_bureaucratic_piece(algebraic_move, board, color, turn_number):
         pos_args = algebraic_move[1]
         piece = board.get_piece_that_can_move_to_index(board.get_references(algebraic_move[0], color), i, j,
                                                        end_args=end_args, pos_args=pos_args)
-        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j], turn_number=turn_number)
+        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j])
 
     # Move piece and capture with complex ambiguity. Should also almost never happen
     elif re.match('[NBRQK][a-h][1-8]x[a-h][1-8]', algebraic_move):
@@ -114,11 +114,10 @@ def move_bureaucratic_piece(algebraic_move, board, color, turn_number):
         pos_args = algebraic_move[1:3]
         piece = board.get_piece_that_can_move_to_index(board.get_references(algebraic_move[0], color), i, j,
                                                        end_args=end_args, pos_args=pos_args)
-        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j], turn_number=turn_number)
+        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j])
 
 
-def castle(algebraic_move, board, color, turn_number):
-    # queenside castling
+def castle(algebraic_move, board, color):
     if color == 0:
         i = board.white_king[0].i
         j = board.white_king[0].j
@@ -128,15 +127,15 @@ def castle(algebraic_move, board, color, turn_number):
 
     # Move king, then queenside rook
     if re.match('O-O-O', algebraic_move):
-        update_move_piece(board=board, piece=board.board[i][j], i=i, j=j - 2, turn_number=turn_number)
-        update_move_piece(board=board, piece=board.board[i][0], i=i, j=3, turn_number=turn_number)
+        update_move_piece(board=board, piece=board.board[i][j], i=i, j=j - 2)
+        update_move_piece(board=board, piece=board.board[i][0], i=i, j=3)
     # Move king, then kingside rook
     else:
-        update_move_piece(board=board, piece=board.board[i][j], i=i, j=j + 2, turn_number=turn_number)
-        update_move_piece(board=board, piece=board.board[i][7], i=i, j=5, turn_number=turn_number)
+        update_move_piece(board=board, piece=board.board[i][j], i=i, j=j + 2)
+        update_move_piece(board=board, piece=board.board[i][7], i=i, j=5, castled=True)
 
 
-def update_move_piece(board, piece, i, j):
+def update_move_piece(board, piece, i, j, castled=False):
     if isinstance(piece, Pieces.Pawn) and piece.i - i == 2:
         piece.jumped_two = True
     board.set_empty(piece.i, piece.j)
@@ -144,7 +143,8 @@ def update_move_piece(board, piece, i, j):
     piece.i = i
     piece.j = j
     piece.last_turn_moved = board.turn_number
-    board.turn_number += 1
+    if not castled:
+        board.turn_number += 1
 
 
 def update_capture_piece(board, attk_piece, def_piece):
@@ -188,6 +188,9 @@ def convert_coordinate_form_to_algebraic_form(coordinate_form_moves):
 
         # Otherwise bureaucratic piece
         else:
+            if 'O-O' in coordinate_move:
+                algebraic_form_moves.append(coordinate_move)
+                continue
             piece_type = coordinate_move[0]
             piece_coords = re.findall('[a-h][1-8]', coordinate_move)
             conflicting_moves = []

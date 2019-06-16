@@ -57,7 +57,7 @@ if __name__ == '__main__':
     NN_model.add(Dense(256, kernel_initializer='normal', activation='hard_sigmoid'))
 
     # Compile the network :
-    NN_model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mean_absolute_error'])
+    NN_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     NN_model.summary()
     checkpoint_name = 'Weights-{epoch:03d}--{val_loss:.5f}.hdf5'
     checkpoint = ModelCheckpoint(checkpoint_name, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
@@ -75,6 +75,7 @@ if __name__ == '__main__':
             # Train the network
             NN_model.fit(training_features, training_labels, epochs=50, batch_size=32, validation_split=0.2,
                          callbacks=callbacks_list)
+            game = f.readline()
 
     # serialize model to JSON
     model_json = NN_model.to_json()

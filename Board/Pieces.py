@@ -289,6 +289,10 @@ class King:
                  self.get_move(board, self.i + 1, self.j + 1, ignore_check), self.get_move(board, self.i + 1, self.j - 1, ignore_check),
                  self.get_move(board, self.i - 1, self.j, ignore_check), self.get_move(board, self.i, self.j - 1, ignore_check),
                  self.get_move(board, self.i - 1, self.j - 1, ignore_check), self.get_move(board, self.i - 1, self.j + 1, ignore_check)]
+        if self.can_castle_kingside(board):
+            moves.append('O-O')
+        if self.can_castle_queenside(board):
+            moves.append('O-O-O')
         return [x for x in moves if x is not None]
 
     def get_move(self, board, i, j, ignore_check):
@@ -316,6 +320,29 @@ class King:
 
         return can_move_forward_and_sideways(self, board, i, j) or can_move_diagonally(self, board, i, j)
 
+    def can_castle_kingside(self, board):
+        if self.last_turn_moved == -1 and board.board[self.i][self.j + 3].last_turn_moved == -1:
+            if board.move_is_check_or_checkmate(piece=self, i=self.i, j=self.j) != 0:
+                return False
+            for k in range(1, 3):
+                if not isinstance(board.board[self.i][self.j + k], NullPiece):
+                    return False
+                if board.move_is_check_or_checkmate(piece=self, i=self.i, j=self.j + k) != 0:
+                    return False
+            return True
+        return False
+
+    def can_castle_queenside(self, board):
+        if self.last_turn_moved == -1 and board.board[self.i][self.j - 4].last_turn_moved == -1:
+            if board.move_is_check_or_checkmate(piece=self, i=self.i, j=self.j) != 0:
+                return False
+            for k in range(1, 4):
+                if not isinstance(board.board[self.i][self.j - k], NullPiece):
+                    return False
+                if board.move_is_check_or_checkmate(piece=self, i=self.i, j=self.j - k) != 0:
+                    return False
+            return True
+        return False
 
 class NullPiece:
     def __init__(self, i, j, color):
