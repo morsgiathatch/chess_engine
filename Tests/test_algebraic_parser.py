@@ -3,11 +3,11 @@ import os
 
 
 if __name__ == '__main__':
-    printout = True
+    printout = False
     cwd = os.getcwd()
     parent = os.path.join(cwd, os.path.join(os.path.dirname(__file__)))
-    game_path = parent + "/../Parser/parsed_games/black_games_won/black_games_won.txt"
-    # game_path = parent + "/../Parser/parsed_games/white_games_won/white_games_won.txt"
+    # game_path = parent + "/../Parser/parsed_games/black_games_won/black_games_won.txt"
+    game_path = parent + "/../Parser/parsed_games/white_games_won/white_games_won.txt"
     # game_path = parent + "/../Parser/parsed_games/tied_games/tie.txt"
 
     games = []
@@ -19,8 +19,8 @@ if __name__ == '__main__':
             games.append(moves)
     f.close()
     for k, moves in enumerate(games):
-        if k != 1:
-            continue
+        # if k != 59:
+        #     continue
 
         board = Board.Board()
         board_str = Board.get_board_str(board)
@@ -29,6 +29,8 @@ if __name__ == '__main__':
             print("\nTurn %d: %s" % (board.turn_number, 'Begin game'))
             print(board_str)
         for i, move in enumerate(moves):
+            if i == 74:
+                a = 3
             board.read_and_update(algebraic_move=move)
             temp_str = Board.get_board_str(board)
             if temp_str == board_str:
@@ -38,4 +40,6 @@ if __name__ == '__main__':
             if printout:
                 print("\nTurn %d: %s" % (board.turn_number, move))
                 print(board_str)
+        if board.turn_number != len(moves):
+            raise ValueError('Error in turn number increments')
         del board

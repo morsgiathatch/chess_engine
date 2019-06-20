@@ -3,7 +3,7 @@ import os
 
 
 if __name__ == '__main__':
-    printout = True
+    printout = False
     cwd = os.getcwd()
     parent = os.path.join(cwd, os.path.join(os.path.dirname(__file__)))
     # game_path = parent + "/../Parser/parsed_games/black_games_won/black_games_won.txt"
@@ -19,7 +19,7 @@ if __name__ == '__main__':
             games.append(moves)
     f.close()
     for k, moves in enumerate(games):
-        if k != 3:
+        if k <= 3:
             continue
 
         board = Board.Board()

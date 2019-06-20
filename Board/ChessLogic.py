@@ -40,6 +40,7 @@ def move_pawn(algebraic_move, board, color, turn_number):
         board.board[piece.i][piece.j] = Pieces.NullPiece(piece.i, piece.j, 1)
         board.delete_piece_from_references(piece.i, piece.j, color)
         board.get_promoted_piece(algebraic_move[3], i, j, color, turn_number=turn_number)
+        board.turn_number += 1
 
     # Pawn promotion with capture
     elif re.match('[a-h]x[a-h][1-8]=', algebraic_move):
@@ -128,7 +129,7 @@ def castle(algebraic_move, board, color):
     # Move king, then queenside rook
     if re.match('O-O-O', algebraic_move):
         update_move_piece(board=board, piece=board.board[i][j], i=i, j=j - 2)
-        update_move_piece(board=board, piece=board.board[i][0], i=i, j=3)
+        update_move_piece(board=board, piece=board.board[i][0], i=i, j=3, castled=True)
     # Move king, then kingside rook
     else:
         update_move_piece(board=board, piece=board.board[i][j], i=i, j=j + 2)

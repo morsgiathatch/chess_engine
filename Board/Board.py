@@ -312,8 +312,6 @@ class Board:
         possible_moves = []
         for row in self.board:
             for piece in row:
-                if isinstance(piece, Pieces.King):
-                    a = 3
                 if not isinstance(piece, Pieces.NullPiece) and piece.color == self.turn_number % 2:
                     possible_moves += piece.get_moves(self, ignore_check)
 
