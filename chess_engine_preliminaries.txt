@@ -1,0 +1,3 @@
+chess stuff:
+
+# Game database http://theweekinchess.com/twic

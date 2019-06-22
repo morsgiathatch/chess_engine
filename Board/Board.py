@@ -80,7 +80,7 @@ class Board:
     def vectorize(self):
         for i in range(0, 8):
             for j in range(0, 8):
-                self.vector[i >> 5 + j >> 2: i >> 5 + j >> 2 + 4] = self.board[i][j].binary_format
+                self.vector[(i << 5) + (j << 2): (i << 5) + (j << 2) + 4] = self.board[i][j].binary_format
 
     # Helper in constructing new board from vectorization.
     # Not to be confused with update which represents changes in board state.

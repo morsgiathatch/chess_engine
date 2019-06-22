@@ -15,7 +15,7 @@ def get_examples(color_, moves):
     for i, unformatted_move in enumerate(moves):
         move = []
         for j in range(0, len(unformatted_move)):
-            move.append(unformatted_move[j])
+            move.append(float(unformatted_move[j]))
         if color_ == 0:
             if i % 2 == 0:
                 features_.append(np.array(move))
@@ -79,10 +79,16 @@ if __name__ == '__main__':
 
     # serialize model to JSON
     model_json = NN_model.to_json()
-    with open(parent + "/nn_data/model.json", "w") as json_file:
-        json_file.write(model_json)
-    # serialize weights to HDF5
-    NN_model.save_weights(parent + "/nn_data/model.h5")
+    if color == 0:
+        with open(parent + "/nn_data/white/model.json", "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        NN_model.save_weights(parent + "/nn_data/white/model.h5")
+    else:
+        with open(parent + "/nn_data/black/model.json", "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        NN_model.save_weights(parent + "/nn_data/black/model.h5")
     print("Saved model to disk")
 
 else:

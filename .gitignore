@@ -3,4 +3,6 @@ Parser/parsed_games
 Parser/vectorized_games
 venv/
 .idea/
-Board/__pycache__
+*__pycache__*
+Engine/nn_data
+*.hdf5*

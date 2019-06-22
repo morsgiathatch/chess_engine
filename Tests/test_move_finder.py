@@ -37,8 +37,8 @@ if __name__ == '__main__':
             board.read_and_update(algebraic_move=move)
             if printout:
                 print('Possible moves for next move are ', possible_moves)
-                board_str = Board.get_board_str(board)
                 print("\nTurn %d: %s" % (board.turn_number, move))
+                board_str = Board.get_board_str(board)
                 print(board_str)
                 if board.turn_number == 35:
                     a = 3
