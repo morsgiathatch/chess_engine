@@ -6,3 +6,4 @@ venv/
 *__pycache__*
 Engine/nn_data
 *.hdf5*
+Scraper/zips

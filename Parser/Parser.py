@@ -3,7 +3,7 @@ import re
 
 
 def print_to_file(games, file_path):
-    with open(file_path, 'w+') as f:
+    with open(file_path, 'a+') as f:
         for game in games:
             print(game, file=f)
     f.close()
