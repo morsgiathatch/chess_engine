@@ -1,10 +1,18 @@
 #include <gtk/gtk.h>
 #include "board.h"
 
+void start_as_white(GtkWidget *white_button, gpointer data){
+    GtkWidget * window = (GtkWidget *)data;
+    GtkWidget * image = gtk_image_new_from_file (realpath("./imgs/white_board.png", NULL));
+    GList * children = gtk_container_get_children(GTK_CONTAINER (window));
+    GList * child;
 
-static int counter = 0;
+    for (child = children; child != NULL; child = child->next){
+        gtk_widget_destroy(GTK_WIDGET(child->data));
+    }
 
-static gboolean expose(GtkWidget *widget, GdkEventExpose *event, gpointer userdata){
+    gtk_container_add(GTK_CONTAINER (window), image);
+    gtk_widget_show_all(window);
 
 }
 
@@ -15,18 +23,20 @@ void destroy(GtkWidget *widget, gpointer data){
 int main(int argc,char *argv[]){
 
     GtkWidget *window;
+    GtkWidget *white_button;
     gtk_init (&argc, &argv);
 
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_app_paintable(window, TRUE);
+    gtk_container_set_border_width(GTK_CONTAINER (window), 20);
 
+    // Add close handler
     g_signal_connect (window, "destroy", G_CALLBACK (destroy), NULL);
-    /* Let's set the border width of the window to 20.
-    * You may play with the value and see the
-    * difference. */
-    gtk_container_set_border_width(GTK_CONTAINER (window), 600);
-    gtk_container_set_border_height(GTK_CONTAINER (window), 600);
-    g_signal_connect(G_OBJECT(window), "expose-event", G_CALLBACK(expose), NULL);
+
+    // Add button and button handler
+    white_button = gtk_button_new_with_label("Play As White");
+    g_signal_connect (white_button, "clicked", G_CALLBACK (start_as_white), window);
+    gtk_container_add(GTK_CONTAINER (window), white_button);
 
     gtk_widget_show_all(window);
 
