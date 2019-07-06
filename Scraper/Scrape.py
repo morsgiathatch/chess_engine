@@ -21,14 +21,14 @@ if __name__ == '__main__':
                 links.append(link)
 
     zips = os.listdir(parent + '/zips')
-    skip_link = False
     for link in links:
+        skip_link = False
         for zip_file in zips:
             if zip_file in link:
                 skip_link = True
         if not skip_link:
             urllib.request.urlretrieve(link, parent + '/zips/' + link[link.find('zips/') + 5:])
-            time.sleep(30)
+            time.sleep(1)
 
 else:
     exit(-1)

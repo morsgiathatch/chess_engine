@@ -1,4 +1,4 @@
-from Board import Board
+import Board
 
 
 class Pawn:

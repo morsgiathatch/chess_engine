@@ -1,5 +1,5 @@
-from Board import Pieces
-from Board import Board
+import Pieces
+import Board
 import re
 
 

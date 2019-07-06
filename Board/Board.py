@@ -1,8 +1,7 @@
 import copy
-from Board import Pieces
-from Board import ChessLogic
 import re
-
+import Pieces
+import ChessLogic
 
 # Chess board is initialized in the following format
 # 7 r n b q k b n r    Black side
@@ -71,7 +70,7 @@ class Board:
 
         # Parse error?
         else:
-            raise ValueError('Invalid algebraic notation')
+            raise ValueError('Invalid algebraic notation: %s' % algebraic_move)
 
         # self.turn_number += 1
         self.vectorize()
@@ -196,7 +195,7 @@ class Board:
 
         # Now need to use pos_args to trim pieces_that_can_move_to_index
         for piece in pieces_that_can_move_to_index:
-            if pos_args in (str(Board.col_index_to_algebra[piece.j]) + str(Board.row_index_to_algebra[piece.i])):
+            if pos_args is not None and pos_args in (str(Board.col_index_to_algebra[piece.j]) + str(Board.row_index_to_algebra[piece.i])):
                 return piece
 
         # This should not occur maybe?
@@ -319,7 +318,8 @@ class Board:
         return possible_moves
 
     def get_list_of_possible_moves_in_algebraic_form(self):
-        list_of_possible_moves_in_coordinate_form = self.get_list_of_possible_moves_in_coordinate_form(ignore_check=False)
+        list_of_possible_moves_in_coordinate_form = self.get_list_of_possible_moves_in_coordinate_form(
+            ignore_check=False)
         return ChessLogic.convert_coordinate_form_to_algebraic_form(list_of_possible_moves_in_coordinate_form)
 
     # Return 2 if checkmate, 1 if just check, 0 if nothing

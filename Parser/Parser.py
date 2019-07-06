@@ -17,11 +17,22 @@ def parse(file_path):
     :return: multiple python lists
     :rtype: list
     """
+    print('reading filepath: %s' % file_path)
     tied_games_ = []
     white_games_won_ = []
     black_games_won_ = []
+    line_num = 0
     with open(file_path, 'r') as f:
-        line = f.readline()
+        reading_error = True
+        while reading_error:
+            try:
+                line_num += 1
+                line = f.readline()
+                reading_error = False
+            except (UnicodeError, UnicodeDecodeError):
+                print(line_num)
+                reading_error = True
+
         while line:
             if line[0] == '1':
                 game_lines = ''
@@ -49,7 +60,15 @@ def parse(file_path):
                     game_lines = game_lines[:-1]
                     black_games_won_.append(game_lines)
 
-            line = f.readline()
+            reading_error = True
+            while reading_error:
+                try:
+                    line_num += 1
+                    line = f.readline()
+                    reading_error = False
+                except (UnicodeError, UnicodeDecodeError):
+                    print(line_num)
+                    reading_error = True
     f.close()
 
     return tied_games_, white_games_won_, black_games_won_
@@ -60,8 +79,9 @@ if __name__ == '__main__':
     cwd = os.getcwd()
     parent = os.path.join(cwd, os.path.join(os.path.dirname(__file__)))
     game_files = os.listdir(parent + "/games")
+    game_files.sort(reverse=True)
     for game_file in game_files:
-        tied_games, white_games_won, black_games_won = parse(parent + "/games/" + game_file)
+        tied_games, white_games_won, black_games_won = parse(parent + "games/" + game_file)
 
         print_to_file(tied_games, parent + "/parsed_games/tied_games/tie.txt")
         print_to_file(white_games_won, parent + "/parsed_games/white_games_won/white_games_won.txt")
