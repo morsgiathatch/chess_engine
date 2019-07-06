@@ -7,3 +7,6 @@ venv/
 Engine/nn_data
 *.hdf5*
 Scraper/zips
+GUI/imgs
+*.o
+GUI/main
