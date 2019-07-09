@@ -10,7 +10,7 @@ typedef struct Tile{
 }Tile;
 
 typedef struct Board{
-    Tile * tiles[8][8];
+    Tile pieces[32];
 }Board;
 
 Board * initialize_board();
@@ -22,5 +22,6 @@ void initialize_bishops(Board *);
 void initialize_queens(Board *);
 void initialize_kings(Board *);
 void delete_board(Board *);
+void print_board(Board *);
 
 #endif

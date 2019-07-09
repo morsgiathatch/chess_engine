@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-W -Wall $(shell pkg-config --cflags gtk+-3.0)
+CFLAGS=-g -W -Wall $(shell pkg-config --cflags gtk+-3.0)
 LDFLAGS=$(shell pkg-config --libs gtk+-3.0)
 DEPS = board.h
 OBJ = main.o board.o
