@@ -1,5 +1,5 @@
-import Pieces
-import Board
+from Board import Pieces
+from Board import Board
 import re
 
 
@@ -238,3 +238,16 @@ def convert_coordinate_form_to_algebraic_form(coordinate_form_moves):
                     raise ValueError('Parse or logic error encountered')
 
     return algebraic_form_moves
+
+
+def get_target_coordinate_from_algebraic_moves(algebraic_moves):
+    target_coords = []
+    for algebraic_move in algebraic_moves:
+        coords = re.findall('[a-h][1-8]', algebraic_move)
+        if len(coords) == 1:
+            coord = coords[0]
+        else:
+            coord = coords[1]
+        target_coord = str(Board.Board.algebra_to_index_map[coord[1]]) + str(Board.Board.algebra_to_index_map[coord[0]])
+        target_coords.append(target_coord)
+    return target_coords

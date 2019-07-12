@@ -1,7 +1,8 @@
 from Board import Board
+from Board import ChessLogic
 from Engine.Engine import Engine
 import os
-import time
+import sys
 
 if __name__ == '__main__':
     # Build blank board
@@ -16,9 +17,9 @@ if __name__ == '__main__':
         engine_move = engine.make_move()
         game_board.read_and_update(engine_move)
         # find (row, col, row, col) coordinate of piece and target and print to stdout
+        opponent_coord_move = ChessLogic.get_target_coordinate_from_algebraic_moves(engine_move)[0]
+        print(opponent_coord_move)
 
-        # print("\nTurn %d: %s" % (game_board.turn_number, engine_move))
-        # print(Board.get_board_str(game_board))
     else:
         engine = Engine(model_path=parent + '/../Engine/nn_data/black/model.json',
                         weights_path=parent + '/../Engine/nn_data/black/model.h5')
@@ -26,26 +27,32 @@ if __name__ == '__main__':
     # "row,col"
     player_move = input()
     while player_move != 'quit':
+        # This checks if the gui is merely wishing for possible moves for a given piece
         if "!!" not in player_move:
             terms = player_move.split(',')
-            row = terms[0]
-            col = terms[1]
+            row = int(terms[0])
+            col = int(terms[1])
             moves = game_board.board[row][col].get_moves(game_board, ignore_check=False)
-            # get moves in (row, col) form
-            # print moves
-            # continue
+            moves = ChessLogic.get_target_coordinate_from_algebraic_moves(moves)
+            for move in moves:
+                sys.stdout.write(move)
+            sys.stdout.flush()
+            player_move = input()
+            continue
 
-        # otherwise get move in (row, col, row, col) form where first two are piece, second two are target location
+        # otherwise get move in row,col,row,col!! form where first two are piece, second two are target location
+        coords = player_move.split('!!')[0]
+        coords = coords.split(',')
+        piece = game_board.board[coords[0]][coords[1]]
+        move = piece.get_move(board=game_board, i=coords[2], j=coords[3], ignore_check=True)
+        game_board.read_and_update(move)
+        engine.update_opponent_move(move)
 
-        game_board.read_and_update(player_move)
-        # print("\nTurn %d: %s" % (game_board.turn_number, player_move))
-        # print(Board.get_board_str(game_board))
-        engine.update_opponent_move(player_move)
+        # have engine move and convert algebraic move to coordinate to pass to gui
         engine_move = engine.make_move()
         game_board.read_and_update(engine_move)
-        # print("\nTurn %d: %s" % (game_board.turn_number, engine_move))
-        # print(Board.get_board_str(game_board))
-        time.sleep(0.1)
+        opponent_coord_move = ChessLogic.get_target_coordinate_from_algebraic_moves(engine_move)[0]
+        print(opponent_coord_move)
         player_move = input()
 
 else:

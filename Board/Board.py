@@ -1,7 +1,7 @@
 import copy
 import re
-import Pieces
-import ChessLogic
+from Board import Pieces
+from Board import ChessLogic
 
 # Chess board is initialized in the following format
 # 7 r n b q k b n r    Black side
@@ -13,6 +13,7 @@ import ChessLogic
 # 1 p p p p p p p p
 # 0 r n b q k b n r
 #   0 1 2 3 4 5 6 7    White side
+
 
 class Board:
     algebra_to_index_map = {'a': 0, '1': 0, 'b': 1, '2': 1, 'c': 2, '3': 2, 'd': 3, '4': 3, 'e': 4, '5': 4, 'f': 5,
