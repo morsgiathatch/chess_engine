@@ -6,7 +6,7 @@
 
 #define BORDER_WIDTH 20.0
 #define PIECE_WIDTH 60.0
-#define MAX_BUFF 1000
+#define MAX_BUFF 1024
 // Macros for converting coordinates based on black or white based game to be used in window
 #define white_row_to_img_coords(i) (478 - ((int)PIECE_WIDTH * (i)))
 #define white_col_to_img_coords(i) (59 + ((int)PIECE_WIDTH * (i)))
@@ -21,22 +21,22 @@
 #define x_img_coord_to_white_col_in_board(i) (int)(((double)(i) - 59.0) / PIECE_WIDTH)
 #define y_img_coord_to_black_row_in_board(i) (int)(((double)(i) - 58.0) / PIECE_WIDTH)
 #define x_img_coord_to_black_col_in_board(i) (int)((479.0 - (double)(i) + PIECE_WIDTH) / PIECE_WIDTH)
+#define pink_square_i(i) ((i) - 2)
+#define pink_square_j(j) (j)
 
+static bool PLAYER_IS_WHITE = false;
+static bool PIECE_CURRENTLY_CLICKED = false;
 
-static bool player_is_white = false;
-
-typedef struct WindowBoard{
+typedef struct BoardGUI{
     Board * board;
     GtkWidget * window;
-} WindowBoard;
-
-typedef struct FixedBoard{
-    Board * board;
-    GtkFixed * board_background;
-} FixedBoard;
+    GtkWidget * board_background;
+    GList * pieces;
+    GList * pink_squares;
+} BoardGUI;
 
 void get_window_coords(int * i, int * j, int row, int col){
-    if (player_is_white){
+    if (PLAYER_IS_WHITE){
         *i = white_row_to_img_coords(row);
         *j = white_col_to_img_coords(col);
     }
@@ -47,7 +47,7 @@ void get_window_coords(int * i, int * j, int row, int col){
 }
 
 void get_board_coords(int * row, int * col, int x, int y){
-    if (player_is_white){
+    if (PLAYER_IS_WHITE){
         *row = y_img_coord_to_white_row_in_board(y);
         *col = x_img_coord_to_white_col_in_board(x);
     }
@@ -70,141 +70,139 @@ Tile * get_piece_at(int row, int col, Board * board){
 }
 
 
-GtkWidget * get_widget_at(int row, int col, GtkFixed * board_background){
+GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui){
     GList * children;
     GList * child_;
-    children = gtk_container_get_children(GTK_CONTAINER(board_background));
+    children = board_gui->pieces;
 
-    GtkFixedChild * child;
-    GtkWidget * child_widget;
+    GtkWidget * child;
 
     for (child_ = children; child_ != NULL; child_ = child_->next){
         int x, y;
-        child = (GtkFixedChild *)(child_->data);
-        child_widget = child->widget;
-        GtkAllocation * allocation;
-        gtk_widget_get_allocation(child, allocation);
-        GdkRectangle * rect;
-        rect = (GdkRectangle *)allocation;
+        child = (GtkWidget *)(child_->data);
+        if (GTK_IS_WIDGET(child)){
+            GtkAllocation allocation;
+            GtkAllocation * alloc_ptr = &allocation;
 
-        x = rect->x;
-        y = rect->y;
+            gtk_widget_get_allocation(child, alloc_ptr);
 
-        int * _row = (int *)malloc(sizeof(int));
-        int * _col = (int *)malloc(sizeof(int));
-        get_board_coords(_row, _col, x, y);
+            x = ((GdkRectangle *)alloc_ptr)->x;
+            y = ((GdkRectangle *)alloc_ptr)->y;
 
-        if (*_col == col && *_row == row){
-//                printf("found widget at %d,%d\n", *_row, *_col);
-            return GTK_WIDGET(child);
+            int row_, col_;
+            get_board_coords(&row_, &col_, x, y);
+            if (col_ == col && row_ == row){
+                return GTK_WIDGET(child);
+            }
         }
     }
-//    printf("found %d widgets\n", counter);
     return NULL;
 }
 
 
-void color_possible_moves(FixedBoard * fixed_board, char * buffer){
-    Board * board = fixed_board->board;
-    GtkFixed * board_background = fixed_board->board_background;
-
-    int i = 0;
-    while (1){
-        if (buffer[i + 1] == 0)
-            break;
-
+void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
+    GtkFixed * board_background = GTK_FIXED(board_gui->board_background);
+    int i;
+    for (i = 0; i < buffer_len; i += 2){
         // Get row/col and convert to int
         int row, col;
         row = buffer[i] - '0';
         col = buffer[i + 1] - '0';
         GtkWidget * piece;
-        piece = get_widget_at(row, col, board_background);
+        piece = get_widget_at(row, col, board_gui);
+
         int i_, j_;
         get_window_coords(&i_, &j_, row, col);
         GtkWidget * pink_square;
         pink_square = gtk_image_new_from_file (realpath("./imgs/pink_square.png", NULL));
-        gtk_fixed_put(board_background, pink_square, j_, i_);
+        gtk_fixed_put(board_background, pink_square, pink_square_j(j_), pink_square_i(i_));
+        board_gui->pieces = g_list_append(board_gui->pieces, pink_square);
 
         if (piece != NULL){
             gtk_fixed_move(board_background, piece, j_, i_);
         }
-        i += 2;
+
     }
+
     gtk_widget_show_all(GTK_WIDGET(board_background));
-
-
 }
 
 
 gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
-    FixedBoard * fixed_board = (FixedBoard *)data;
-    Board * board = fixed_board->board;
+    if (PIECE_CURRENTLY_CLICKED){
+        // Need to remove all pink squares if click is on pink square. Then update piece position.
+        return true;
+    }else{
+        BoardGUI * board_gui = (BoardGUI *)data;
+        Board * board = board_gui->board;
 
-    gdouble x;
-    gdouble y;
-    gdk_event_get_coords(event, &x, &y);
-    // find x_, y_ coords in board
-    int row, col;
-    if (player_is_white){
-        row = y_img_coord_to_white_row(y);
-        col = x_img_coord_to_white_col(x);
-    }
-    else{
-        row = y_img_coord_to_black_row(y);
-        col = x_img_coord_to_black_col(x);
-    }
-
-    // Find piece at click
-    Tile * piece;
-    int i;
-    for (i = 0; i < 32; i++){
-        if ((board->pieces)[i].row == row && (board->pieces)[i].col == col){
-            printf("%d,%d\n", row, col);
-            piece = &(board->pieces[i]);
-            break;
+        gdouble x;
+        gdouble y;
+        gdk_event_get_coords(event, &x, &y);
+        // find x_, y_ coords in board
+        int row, col;
+        if (PLAYER_IS_WHITE){
+            row = y_img_coord_to_white_row(y);
+            col = x_img_coord_to_white_col(x);
         }
+        else{
+            row = y_img_coord_to_black_row(y);
+            col = x_img_coord_to_black_col(x);
+        }
+
+        // Find piece at click
+        Tile * piece;
+        piece = NULL;
+        int i;
+        for (i = 0; i < 32; i++){
+            if ((board->pieces)[i].row == row && (board->pieces)[i].col == col){
+                printf("%d,%d\n", row, col);
+                piece = &(board->pieces[i]);
+                break;
+            }
+        }
+        if (piece == NULL)
+            return true;
+
+        // Now need to wait for python part to get possible moves at (row, col) entry
+        char buffer[MAX_BUFF];
+        fgets(buffer, MAX_BUFF, stdin);
+        int buffer_len;
+        buffer_len = strlen(buffer);
+        // read each move and update color of board.
+        color_possible_moves(board_gui, buffer, buffer_len - 1);
+        PIECE_CURRENTLY_CLICKED = true;
+        // return true to stop propagating event signal
+        return true;
     }
-    // Now need to wait for python part to get possible moves at (row, col) entry
-    char buffer[MAX_BUFF];
-    for (i = 0; i < MAX_BUFF; i++)
-        buffer[i] = 0;
-    fgets(buffer, MAX_BUFF, stdin);
-    // read each move and update color of board
-    color_possible_moves(fixed_board, buffer);
-    // return true to stop propagating event signal
-    return true;
 }
 
-void draw_initial_pieces(GtkFixed * window, Board * board){
+void draw_initial_pieces(BoardGUI * board_gui){
     int i;
     for (i = 0; i < 32; i++){
         int i_, j_;
-        Tile piece = board->pieces[i];
-        if (player_is_white){
-            i_ = white_row_to_img_coords(piece.row);
-            j_ = white_col_to_img_coords(piece.col);
-        }
-        else{
-            i_ = black_row_to_img_coords(piece.row);
-            j_ = black_col_to_img_coords(piece.col);
-        }
+        Tile piece = (board_gui->board)->pieces[i];
+        get_window_coords(&i_, &j_, piece.row, piece.col);
 
         GtkWidget * piece_img = gtk_image_new_from_file(realpath(piece.path_to_img, NULL));
-        gtk_fixed_put(window, piece_img, j_, i_);
-        gtk_widget_show_all(GTK_WIDGET(window));
+        gtk_fixed_put(GTK_FIXED(board_gui->board_background), piece_img, j_, i_);
+
+        // Add image widget to pieces
+        board_gui->pieces = g_list_append(board_gui->pieces, piece_img);
+        gtk_widget_show_all(GTK_WIDGET(board_gui->window));
     }
+
 }
 
 void start_game(GtkWidget *button, gpointer data){
     GtkWidget * board_background;
     board_background = gtk_fixed_new();
-
-    WindowBoard * window_board = (WindowBoard *)data;
-    GtkWidget * window = window_board->window;
+    BoardGUI * board_gui = (BoardGUI *)data;
+    GtkWidget * window = board_gui->window;
     GtkWidget * image;
 
     // Get correct board
-    if (player_is_white)
+    if (PLAYER_IS_WHITE)
         image = gtk_image_new_from_file (realpath("./imgs/white_board.png", NULL));
     else
         image = gtk_image_new_from_file (realpath("./imgs/black_board.png", NULL));
@@ -219,35 +217,33 @@ void start_game(GtkWidget *button, gpointer data){
 
     gtk_container_add(GTK_CONTAINER (window), board_background);
     gtk_fixed_put(GTK_FIXED(board_background), image, 0, 0);
+    board_gui->board_background = board_background;
 
-    Board * board = window_board->board;
-    draw_initial_pieces(GTK_FIXED(board_background), board);
+    draw_initial_pieces(board_gui);
     gtk_widget_show_all(window);
 
-    FixedBoard * fixed_board = (FixedBoard *)malloc(sizeof(FixedBoard));
-    fixed_board->board = board;
-    fixed_board->board_background = board_background;
-
     // Add handler for click
-     g_signal_connect (window, "button-press-event", G_CALLBACK(piece_clicked), fixed_board);
-
-
+     g_signal_connect (window, "button-press-event", G_CALLBACK(piece_clicked), board_gui);
 }
 
 void start_as_white(GtkWidget *white_button, gpointer data){
-    player_is_white = true;
+    PLAYER_IS_WHITE = true;
     printf("w\n");
     start_game(white_button, data);
 }
 
 void start_as_black(GtkWidget *black_button, gpointer data){
-    player_is_white = false;
+    PLAYER_IS_WHITE = false;
     printf("b\n");
     start_game(black_button, data);
 }
 
+void delete_board_gui(BoardGUI * board_gui){
+    return;
+}
+
 void destroy(GtkWidget *widget, gpointer data){
-    delete_board((Board *)data);
+    delete_board_gui((BoardGUI *)data);
     gtk_main_quit ();
 }
 
@@ -273,12 +269,16 @@ int main(int argc,char *argv[]){
     white_button = gtk_button_new_with_label("Play As White");
     black_button = gtk_button_new_with_label("Play as Black");
     // Make dumb struct to pass multiple types
-    WindowBoard window_board;
-    window_board.window = window;
-    window_board.board = board;
+    BoardGUI * board_gui = (BoardGUI *)malloc(sizeof(BoardGUI));
+    board_gui->window = window;
+    board_gui->board = board;
+    board_gui->board_background = NULL;
+    // GList must be initialized to null
+    board_gui->pieces = NULL;
+    board_gui->pink_squares = NULL;
 
-    g_signal_connect (white_button, "clicked", G_CALLBACK (start_as_white), &window_board);
-    g_signal_connect (black_button, "clicked", G_CALLBACK (start_as_black), &window_board);
+    g_signal_connect (white_button, "clicked", G_CALLBACK (start_as_white), board_gui);
+    g_signal_connect (black_button, "clicked", G_CALLBACK (start_as_black), board_gui);
 
     gtk_box_pack_start(GTK_BOX(button_panel), white_button, true, true, 20);
     gtk_box_pack_end(GTK_BOX(button_panel), black_button, true, true, 20);
