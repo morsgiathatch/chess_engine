@@ -240,14 +240,61 @@ def convert_coordinate_form_to_algebraic_form(coordinate_form_moves):
     return algebraic_form_moves
 
 
-def get_target_coordinate_from_algebraic_moves(algebraic_moves):
+def get_target_coordinate_from_algebraic_moves(algebraic_moves, color):
     target_coords = []
     for algebraic_move in algebraic_moves:
         coords = re.findall('[a-h][1-8]', algebraic_move)
         if len(coords) == 1:
             coord = coords[0]
-        else:
+        elif len(coords) == 2:
             coord = coords[1]
+        # this means a castling occurred
+        else:
+            if 'O-O-O' in algebraic_move:           # queenside castle
+                if color == 'w':
+                    target_coords.append('02')
+                else:
+                    target_coords.append('72')
+            else:
+                if color == 'w':                    # kingside castle
+                    target_coords.append('06')
+                else:
+                    target_coords.append('76')
+            continue
+
         target_coord = str(Board.Board.algebra_to_index_map[coord[1]]) + str(Board.Board.algebra_to_index_map[coord[0]])
         target_coords.append(target_coord)
     return target_coords
+
+
+def get_move_coordinates_from_algebraic_move(algebraic_move, color, board):
+    coords = re.findall('[a-h][1-8]', algebraic_move)
+    if len(coords) == 1:
+        row = Board.Board.algebra_to_index_map[coords[1]]
+        col = Board.Board.algebra_to_index_map[coords[0]]
+        if algebraic_move[0].islower():
+            references = board.get_references('p', color)
+        else:
+            references = board.get_references(algebraic_move[0], color)
+        piece = board.get_piece_that_can_move_to_index(list_of_pieces=references, i=row, j=col)
+        return str(piece.i) + str(piece.j) + str(Board.Board.algebra_to_index_map[coords[1]]) + \
+               str(Board.Board.algebra_to_index_map[coords[0]])
+
+    elif len(coords) == 2:
+        return str(Board.Board.algebra_to_index_map[coords[1]]) + str(Board.Board.algebra_to_index_map[coords[0]]) + \
+               str(Board.Board.algebra_to_index_map[coords[3]]) + str(Board.Board.algebra_to_index_map[coords[2]])
+
+    # this means a castling occurred
+    else:
+        if 'O-O-O' in algebraic_move:              # queenside castle
+            if color == 'w':
+                return '04020003'
+            else:
+                return '74727073'
+        else:
+            if color == 'w':                       # kingside castle
+                return '04060705'
+            else:
+                return '74767775'
+
+    # need to check for en passant and piece promotion

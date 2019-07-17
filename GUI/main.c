@@ -107,8 +107,6 @@ void delete_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squares)
             }
         }
     }
-    return NULL;
-
 }
 
 GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squares){
@@ -141,6 +139,65 @@ GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squa
         }
     }
     return NULL;
+}
+
+void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
+    // if buffer len is 4, then a standard move was made
+    if (buffer_len == 4){
+        int start_row, start_col, end_row, end_col;
+        start_row = buffer[0] - '0';
+        start_col = buffer[1] - '0';
+        end_row = buffer[2] - '0';
+        end_col = buffer[3] - '0';
+
+        GtkWidget * piece;
+        piece = get_widget_at(start_row, start_col, board_gui, false);
+        // delete opponent piece if exists
+        delete_widget_at(end_row, end_col, board_gui, false);
+        int x_coord, y_coord;
+        get_window_coords(&y_coord, &x_coord, end_row, end_col);
+        gtk_fixed_move(GTK_FIXED(board_gui->board_background), piece, x_coord, y_coord);
+
+    }
+    // if buffer len is 6, then en passant occured
+    else if (buffer_len == 6){
+        int start_row, start_col, end_row, end_col, opponent_row, opponent_col;
+        start_row = buffer[0] - '0';
+        start_col = buffer[1] - '0';
+        end_row = buffer[2] - '0';
+        end_col = buffer[3] - '0';
+        opponent_row = buffer[4] - '0';
+        opponent_col = buffer[5] - '0';
+
+        GtkWidget * piece;
+        piece = get_widget_at(start_row, start_col, board_gui, false);
+        // delete opponent piece if exists
+        delete_widget_at(opponent_row, opponent_col, board_gui, false);
+        int x_coord, y_coord;
+        get_window_coords(&y_coord, &x_coord, end_row, end_col);
+        gtk_fixed_move(GTK_FIXED(board_gui->board_background), piece, x_coord, y_coord);
+    }
+    // if buffer len is 8, then castling occured
+    else if (buffer_len == 8){
+        int i;
+        for (i = 0; i < 8; i += 4){
+            int start_row, start_col, end_row, end_col;
+            start_row = buffer[0 + i] - '0';
+            start_col = buffer[1 + i] - '0';
+            end_row = buffer[2 + i] - '0';
+            end_col = buffer[3 + i] - '0';
+            GtkWidget * piece;
+            piece = get_widget_at(start_row, start_col, board_gui, false);
+            // delete opponent piece if exists
+            int x_coord, y_coord;
+            get_window_coords(&y_coord, &x_coord, end_row, end_col);
+            gtk_fixed_move(GTK_FIXED(board_gui->board_background), piece, x_coord, y_coord);
+        }
+    }
+
+    // Need to handle piece promotion now
+
+    gtk_widget_show_all(GTK_WIDGET(board_gui->board_background));
 }
 
 
@@ -201,7 +258,6 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         col = x_img_coord_to_black_col(x);
     }
 
-
     if (PIECE_PREVIOUSLY_CLICKED){
         GtkWidget * clicked_square;
         clicked_square = get_widget_at(row, col, board_gui, true);
@@ -231,8 +287,12 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         PIECE_PREVIOUSLY_CLICKED = false;
         gtk_widget_show_all(GTK_WIDGET(board_gui->window));
 
-        // Now wait for python to make opponent move
-
+        // Now wait for python to make opponent move and then return true
+        char buffer[MAX_BUFF];
+        fgets(buffer, MAX_BUFF, stdin);
+        int buffer_len;
+        buffer_len = strlen(buffer);
+        update_opponent_move(board_gui, buffer, buffer_len);
         return true;
     }else{
         // Find piece at click
