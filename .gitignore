@@ -9,4 +9,5 @@ Engine/nn_data
 Scraper/zips
 GUI/imgs
 *.o
-GUI/main
+GUI/gui_main
+Communicator/communicator

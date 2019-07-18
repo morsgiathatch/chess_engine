@@ -2,6 +2,7 @@
 #include <gtk/gtkfixed.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include "board.h"
 
 #define BORDER_WIDTH 20.0
@@ -73,6 +74,13 @@ Tile * get_piece_at(int row, int col, Board * board){
     return NULL;
 }
 
+void add_widget_at(int row, int col, GtkWidget * widget, BoardGUI * board_gui){
+    int x_coord, y_coord;
+    get_window_coords(&x_coord, &y_coord, row, col);
+    gtk_fixed_put(GTK_FIXED(board_gui->board_background), GTK_WIDGET(widget), x_coord, y_coord);
+    board_gui->pieces = g_list_append(board_gui->pieces, widget);
+}
+
 void delete_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squares){
     GList * children;
     GList * child_;
@@ -142,8 +150,8 @@ GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squa
 }
 
 void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
-    // if buffer len is 4, then a standard move was made
-    if (buffer_len == 4){
+    // if buffer len is 4, then a standard move was made, if buffer len is 5, then a pawn promotion occured
+    if (buffer_len == 4 || buffer_len == 5){
         int start_row, start_col, end_row, end_col;
         start_row = buffer[0] - '0';
         start_col = buffer[1] - '0';
@@ -156,7 +164,30 @@ void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
         delete_widget_at(end_row, end_col, board_gui, false);
         int x_coord, y_coord;
         get_window_coords(&y_coord, &x_coord, end_row, end_col);
-        gtk_fixed_move(GTK_FIXED(board_gui->board_background), piece, x_coord, y_coord);
+        if (buffer_len == 5){
+            delete_widget_at(start_row, start_col, board_gui, false);
+            char color[10];
+            char piece[20];
+            if (PLAYER_IS_WHITE)
+                strcpy(color, "white");
+            else
+                strcpy(color, "black");
+            if (buffer[4] == 'Q')
+                strcpy(piece, "queen");
+            else if (buffer[4] == 'R')
+                strcpy(piece, "rook");
+            else if (buffer[4] == 'N')
+                strcpy(piece, "knight");
+            else
+                strcpy(piece, "bishop");
+            char piece_img_path[128];
+            snprintf(piece_img_path, sizeof(piece_img_path), "../GUI/imgs/%s_%s.png", color, piece);
+            GtkWidget * new_piece;
+            new_piece = gtk_image_new_from_file (realpath(piece_img_path, NULL));
+            add_widget_at(end_row, end_col, new_piece, board_gui);
+        }
+        else
+            gtk_fixed_move(GTK_FIXED(board_gui->board_background), piece, x_coord, y_coord);
 
     }
     // if buffer len is 6, then en passant occured
@@ -215,7 +246,7 @@ void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
         int i_, j_;
         get_window_coords(&i_, &j_, row, col);
         GtkWidget * pink_square;
-        pink_square = gtk_image_new_from_file (realpath("./imgs/pink_square.png", NULL));
+        pink_square = gtk_image_new_from_file (realpath("../GUI/imgs/pink_square.png", NULL));
         board_gui->pink_squares = g_list_append(board_gui->pink_squares, pink_square);
 
         if (piece == NULL){
@@ -280,10 +311,13 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
 
         // Remove all pink squares
         GList * l;
+        printf("length of pink squares is %d\n", (int)g_list_length(board_gui->pink_squares));
+
         for (l = board_gui->pink_squares; l != NULL; l = l->next)
             gtk_container_remove(GTK_CONTAINER(board_gui->board_background), GTK_WIDGET(l->data));
         g_list_free(board_gui->pink_squares);
         board_gui->pink_squares = NULL;
+
         PIECE_PREVIOUSLY_CLICKED = false;
         gtk_widget_show_all(GTK_WIDGET(board_gui->window));
 
@@ -314,6 +348,7 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         fgets(buffer, MAX_BUFF, stdin);
         int buffer_len;
         buffer_len = strlen(buffer);
+        fprintf(stderr, buffer);
         // read each move and update color of board.
         color_possible_moves(board_gui, buffer, buffer_len - 1);
         PIECE_PREVIOUSLY_CLICKED = true;
@@ -350,9 +385,9 @@ void start_game(GtkWidget *button, gpointer data){
 
     // Get correct board
     if (PLAYER_IS_WHITE)
-        image = gtk_image_new_from_file (realpath("./imgs/white_board.png", NULL));
+        image = gtk_image_new_from_file (realpath("../GUI/imgs/white_board.png", NULL));
     else
-        image = gtk_image_new_from_file (realpath("./imgs/black_board.png", NULL));
+        image = gtk_image_new_from_file (realpath("../GUI/imgs/black_board.png", NULL));
 
     // Destroy all existing children, i.e. remake window
     GList * children = gtk_container_get_children(GTK_CONTAINER (window));
@@ -395,6 +430,10 @@ void destroy(GtkWidget *widget, gpointer data){
 }
 
 int main(int argc,char *argv[]){
+//    sleep(5);
+    char buffer[MAX_BUFF];
+    fgets(buffer, MAX_BUFF, stdin);
+    fprintf(stderr, buffer);
     GtkWidget *window;
     GtkWidget *button_panel;
     GtkWidget *white_button;

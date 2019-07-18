@@ -2,8 +2,12 @@ from Board import Board
 import copy
 import numpy as np
 from numpy import linalg as la
+# import sys
+# import os
+# stderr = sys.stderr
+# sys.stderr = open(os.devnull, 'w')
 from keras.models import model_from_json
-
+# sys.stderr = stderr
 
 class Engine:
     def __init__(self, model_path, weights_path):
@@ -17,7 +21,7 @@ class Engine:
         # load weights into new model
         self.nn_model.load_weights(weights_path)
         self.nn_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        print("Loaded model from disk")
+        # print("Loaded model from disk")
         self.board = Board.Board()
 
     def update_opponent_move(self, algebraic_move):

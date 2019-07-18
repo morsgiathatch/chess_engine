@@ -269,20 +269,65 @@ def get_target_coordinate_from_algebraic_moves(algebraic_moves, color):
 
 def get_move_coordinates_from_algebraic_move(algebraic_move, color, board):
     coords = re.findall('[a-h][1-8]', algebraic_move)
+    is_pawn_but_not_en_passant_flag = False
+    references = board.get_references('p', color)
+
+    # first handle pawns
+    if algebraic_move[0].islower():
+        # check for en passant
+        if 'x' in algebraic_move:
+            if len(coords) == 1:
+                row = Board.Board.algebra_to_index_map[coords[1]]
+                col = Board.Board.algebra_to_index_map[coords[0]]
+                piece_row = piece_col = 0   # only to rid myself of the IDE warning
+            else:
+                piece_row = Board.Board.algebra_to_index_map[coords[1]]
+                piece_col = Board.Board.algebra_to_index_map[coords[0]]
+                row = Board.Board.algebra_to_index_map[coords[3]]
+                col = Board.Board.algebra_to_index_map[coords[2]]
+            def_piece = board.board[row][col]
+            if isinstance(def_piece, Pieces.NullPiece):
+                if len(coords) == 1:
+                    piece = board.get_piece_that_can_move_to_index(list_of_pieces=references, i=row, j=col)
+                else:
+                    piece = board.board[piece_row][piece_col]
+
+                def_piece_col = col
+                if color == 'w':
+                    def_piece_row = Board.Board.algebra_to_index_map[coords[1]] - 1
+                else:
+                    def_piece_row = Board.Board.algebra_to_index_map[coords[1]] + 1
+                return str(piece.i) + str(piece.j) + str(Board.Board.algebra_to_index_map[coords[1]]) + \
+                       str(Board.Board.algebra_to_index_map[coords[0]]) + str(def_piece_row) + str(def_piece_col)
+            else:
+                is_pawn_but_not_en_passant_flag = True
+        else:
+            is_pawn_but_not_en_passant_flag = True
+
+    if not is_pawn_but_not_en_passant_flag: # in other words, not a pawn
+        references = board.get_references(algebraic_move[0], color)
     if len(coords) == 1:
         row = Board.Board.algebra_to_index_map[coords[1]]
         col = Board.Board.algebra_to_index_map[coords[0]]
-        if algebraic_move[0].islower():
-            references = board.get_references('p', color)
-        else:
-            references = board.get_references(algebraic_move[0], color)
+
         piece = board.get_piece_that_can_move_to_index(list_of_pieces=references, i=row, j=col)
+        end_arg = ''
+        if '=' in algebraic_move:
+            equals_index = algebraic_move.index('=')
+            end_arg = algebraic_move[equals_index + 1]
+
         return str(piece.i) + str(piece.j) + str(Board.Board.algebra_to_index_map[coords[1]]) + \
-               str(Board.Board.algebra_to_index_map[coords[0]])
+               str(Board.Board.algebra_to_index_map[coords[0]]) + end_arg
 
     elif len(coords) == 2:
+        end_arg = ''
+        if '=' in algebraic_move:
+            equals_index = algebraic_move.index('=')
+            end_arg = algebraic_move[equals_index + 1]
+
         return str(Board.Board.algebra_to_index_map[coords[1]]) + str(Board.Board.algebra_to_index_map[coords[0]]) + \
-               str(Board.Board.algebra_to_index_map[coords[3]]) + str(Board.Board.algebra_to_index_map[coords[2]])
+               str(Board.Board.algebra_to_index_map[coords[3]]) + str(Board.Board.algebra_to_index_map[coords[2]]) + \
+               end_arg
 
     # this means a castling occurred
     else:
@@ -296,5 +341,3 @@ def get_move_coordinates_from_algebraic_move(algebraic_move, color, board):
                 return '04060705'
             else:
                 return '74767775'
-
-    # need to check for en passant and piece promotion
