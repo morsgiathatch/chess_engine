@@ -1,6 +1,7 @@
 from Board import Pieces
 from Board import Board
 import re
+import sys
 
 
 def move_pawn(algebraic_move, board, color, turn_number):
@@ -269,9 +270,11 @@ def get_target_coordinate_from_algebraic_moves(algebraic_moves, color):
 
 def get_move_coordinates_from_algebraic_move(algebraic_move, color, board):
     coords = re.findall('[a-h][1-8]', algebraic_move)
+    coords = coords[0]
     is_pawn_but_not_en_passant_flag = False
     references = board.get_references('p', color)
-
+    sys.stderr.write(algebraic_move + '\n')
+    sys.stderr.flush()
     # first handle pawns
     if algebraic_move[0].islower():
         # check for en passant

@@ -29,6 +29,7 @@ static bool PLAYER_IS_WHITE = false;
 static bool PIECE_PREVIOUSLY_CLICKED = false;
 static int  PIECE_PREVIOUSLY_CLICKED_I = 0;
 static int  PIECE_PREVIOUSLY_CLICKED_J = 0;
+static GtkWidget * BOARD_IMAGE_PTR = NULL;
 
 
 
@@ -111,6 +112,7 @@ void delete_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squares)
                 else
                     board_gui->pieces = g_list_remove(board_gui->pieces, child);
                 // remove child from board background
+                // TODO FIX BELOW. IT IS THE INCORRECT METHOD TO DELETE WIDGETS
                 gtk_container_remove(GTK_CONTAINER(board_gui->board_background), GTK_WIDGET(child));
             }
         }
@@ -126,11 +128,14 @@ GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squa
         children = board_gui->pieces;
 
     GtkWidget * child;
+//    fprintf(stderr, "address of board image: %p\n", BOARD_IMAGE_PTR);
 
     for (child_ = children; child_ != NULL; child_ = child_->next){
         int x, y;
         child = (GtkWidget *)(child_->data);
-        if (GTK_IS_WIDGET(child)){
+//        fprintf(stderr, "address of child: %p\n", child);
+//        fflush(stderr);
+        if (GTK_IS_WIDGET(child) && child != BOARD_IMAGE_PTR){
             GtkAllocation allocation;
             GtkAllocation * alloc_ptr = &allocation;
 
@@ -142,7 +147,7 @@ GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squa
             int row_, col_;
             get_board_coords(&row_, &col_, x, y);
             if (col_ == col && row_ == row){
-                return GTK_WIDGET(child);
+                return child;
             }
         }
     }
@@ -235,6 +240,8 @@ void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
 void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
     GtkFixed * board_background = GTK_FIXED(board_gui->board_background);
     int i;
+    GtkWidget * child;
+
     for (i = 0; i < buffer_len; i += 2){
         // Get row/col and convert to int
         int row, col;
@@ -247,9 +254,9 @@ void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
         get_window_coords(&i_, &j_, row, col);
         GtkWidget * pink_square;
         pink_square = gtk_image_new_from_file (realpath("../GUI/imgs/pink_square.png", NULL));
-        board_gui->pink_squares = g_list_append(board_gui->pink_squares, pink_square);
 
         if (piece == NULL){
+            board_gui->pink_squares = g_list_append(board_gui->pink_squares, pink_square);
             gtk_fixed_put(board_background, pink_square, pink_square_j(j_), pink_square_i(i_));
         }
         else {
@@ -260,11 +267,9 @@ void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
             Tile * tile = get_piece_at(row, col, board_gui->board);
             GtkWidget * piece_img;
             piece_img = gtk_image_new_from_file(realpath(tile->path_to_img, NULL));
-            gtk_fixed_put(GTK_WIDGET(overlay), piece_img, 0, 2);
+            gtk_fixed_put(GTK_FIXED(overlay), piece_img, 0, 2);
             gtk_fixed_put(board_background, GTK_WIDGET(overlay), pink_square_j(j_), pink_square_i(i_));
             board_gui->pink_squares = g_list_append(board_gui->pink_squares, overlay);
-
-            gtk_widget_show_all(overlay);
         }
     }
     gtk_widget_show_all(GTK_WIDGET(board_background));
@@ -274,6 +279,7 @@ void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
 gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
     BoardGUI * board_gui = (BoardGUI *)data;
     Board * board = board_gui->board;
+    bool queue_print = false;
 
     gdouble x;
     gdouble y;
@@ -291,44 +297,80 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
 
     if (PIECE_PREVIOUSLY_CLICKED){
         GtkWidget * clicked_square;
+        bool clicked_flag = false;
         clicked_square = get_widget_at(row, col, board_gui, true);
         // If user clicked on a pink square
         if (clicked_square != NULL){
+            clicked_flag = true;
             GtkWidget * originally_clicked_piece, * target_tile;
             originally_clicked_piece = get_widget_at(PIECE_PREVIOUSLY_CLICKED_I, PIECE_PREVIOUSLY_CLICKED_J, board_gui, false);
             target_tile = get_widget_at(row, col, board_gui, false);
             // delete existing piece at target tile, if existent
-            if (target_tile != NULL)
+            if (target_tile != NULL){
                 delete_widget_at(row, col, board_gui, false);
-
+                fprintf(stderr, "Deleting piece due to capture\n");
+                fflush(stderr);
+            }
+            else{
+                if (originally_clicked_piece == NULL)
+                    fprintf(stderr, "Error in finding previously clicked piece!\n");
+                fprintf(stderr, "pink square clicked!\n");
+                fflush(stderr);
+            }
             int x_coord, y_coord;
             get_window_coords(&y_coord, &x_coord, row, col);
             gtk_fixed_move(GTK_FIXED(board_gui->board_background), originally_clicked_piece, x_coord, y_coord);
-            printf("%d,%d!!\n", row, col);
+            queue_print = true;
             // Update board state internals, but I don't think I need these anymore
 //            board_gui->board->pieces[PIECE_PREVIOUSLY_CLICKED_I]
+            // TODO WILL NEED TO UPDATE THESE INTERNALS FOR TRACKING WHICH PIECE WAS CLICKED.
         }
 
         // Remove all pink squares
         GList * l;
-        printf("length of pink squares is %d\n", (int)g_list_length(board_gui->pink_squares));
+        GList * children;
+        children = gtk_container_get_children(board_gui->board_background);
+        fprintf(stderr, "number of children before deletion is %d\n", (int)g_list_length(children));
+//        fprintf(stderr, "address of image is %p\n", BOARD_IMAGE_PTR);
+        int g_list_len;
+        for (l = board_gui->pink_squares; l != NULL; l = l->next){
+            if ((g_list_len = g_list_index(children, l->data)) == -1)
+                fprintf(stderr, "FAILED TO FIND PINK SQUARE\n");
+//            fprintf(stderr, "address of pink_square: %p\n", l->data);
+//            fflush(stderr);
 
-        for (l = board_gui->pink_squares; l != NULL; l = l->next)
-            gtk_container_remove(GTK_CONTAINER(board_gui->board_background), GTK_WIDGET(l->data));
+            if(GTK_IS_WIDGET(l->data)){
+                GList * pink_square;
+                pink_square = g_list_find(children, l->data);
+                if (pink_square->data != BOARD_IMAGE_PTR){
+                    gtk_widget_destroy(pink_square->data);
+                    g_list_remove(children, l->data);
+                }
+            }
+        }
         g_list_free(board_gui->pink_squares);
         board_gui->pink_squares = NULL;
-
+        fprintf(stderr, "number of children after deletion is %d\n", (int)g_list_length(children));
+        fprintf(stderr, "number of pink squares remaining is %d\n", (int)g_list_length(board_gui->pink_squares));
+        fflush(stderr);
+        gtk_widget_hide(GTK_WIDGET(board_gui->board_background));
+        gtk_widget_show_all(GTK_WIDGET(board_gui->board_background));
         PIECE_PREVIOUSLY_CLICKED = false;
-        gtk_widget_show_all(GTK_WIDGET(board_gui->window));
-
-        // Now wait for python to make opponent move and then return true
-        char buffer[MAX_BUFF];
-        fgets(buffer, MAX_BUFF, stdin);
-        int buffer_len;
-        buffer_len = strlen(buffer);
-        update_opponent_move(board_gui, buffer, buffer_len);
+        if (queue_print){
+            printf("%d,%d!!\n", row, col);
+            fflush(stdout);
+        }
+        // Now wait for python to make opponent move and then return true, if user clicked valid button
+        if (clicked_flag){
+            char buffer[MAX_BUFF];
+            fgets(buffer, MAX_BUFF, stdin);
+            int buffer_len;
+            buffer_len = strlen(buffer);
+            update_opponent_move(board_gui, buffer, buffer_len);
+        }
         return true;
-    }else{
+
+    } else{
         // Find piece at click
         Tile * piece;
         piece = NULL;
@@ -336,6 +378,7 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         for (i = 0; i < 32; i++){
             if ((board->pieces)[i].row == row && (board->pieces)[i].col == col){
                 printf("%d,%d\n", row, col);
+                fflush(stdout);
                 piece = &(board->pieces[i]);
                 break;
             }
@@ -371,7 +414,7 @@ void draw_initial_pieces(BoardGUI * board_gui){
 
         // Add image widget to pieces
         board_gui->pieces = g_list_append(board_gui->pieces, piece_img);
-        gtk_widget_show_all(GTK_WIDGET(board_gui->window));
+        gtk_widget_show_all(GTK_WIDGET(piece_img));
     }
 
 }
@@ -400,6 +443,7 @@ void start_game(GtkWidget *button, gpointer data){
     gtk_container_add(GTK_CONTAINER (window), board_background);
     gtk_fixed_put(GTK_FIXED(board_background), image, 0, 0);
     board_gui->board_background = board_background;
+    BOARD_IMAGE_PTR = image;
 
     draw_initial_pieces(board_gui);
     gtk_widget_show_all(window);
@@ -411,12 +455,16 @@ void start_game(GtkWidget *button, gpointer data){
 void start_as_white(GtkWidget *white_button, gpointer data){
     PLAYER_IS_WHITE = true;
     printf("w\n");
+    fflush(stdout);
+    fprintf(stderr, "w\n");
     start_game(white_button, data);
 }
 
 void start_as_black(GtkWidget *black_button, gpointer data){
     PLAYER_IS_WHITE = false;
     printf("b\n");
+    fflush(stdout);
+    fprintf(stderr, "b\n");
     start_game(black_button, data);
 }
 
@@ -430,10 +478,10 @@ void destroy(GtkWidget *widget, gpointer data){
 }
 
 int main(int argc,char *argv[]){
-//    sleep(5);
-    char buffer[MAX_BUFF];
-    fgets(buffer, MAX_BUFF, stdin);
-    fprintf(stderr, buffer);
+    sleep(1);
+//    char buffer[MAX_BUFF];
+//    fgets(buffer, MAX_BUFF, stdin);
+//    fprintf(stderr, buffer);
     GtkWidget *window;
     GtkWidget *button_panel;
     GtkWidget *white_button;

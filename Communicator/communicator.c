@@ -15,16 +15,16 @@ int main(int argc, char ** argv){
     if ((pid = fork()) == 0)
     {
         // Start gui
-        dup2(fds[0], 1);
-        dup2(fds2[1], 0);
+        dup2(fds[0], 0);
+        dup2(fds2[1], 1);
         close(fds[1]);
         close(fds2[0]);
         char * argv[] = {"../GUI/gui_main", NULL};
         execv("../GUI/gui_main", argv);
     } else if ((pid2 = fork()) == 0){
         //start python script
-        dup2(fds2[0], 1);
-        dup2(fds[1], 0);
+        dup2(fds2[0], 0);
+        dup2(fds[1], 1);
         close(fds[0]);
         close(fds2[1]);
         execlp("python3", "python3", "../run_game.py", NULL);

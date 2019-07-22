@@ -8,13 +8,12 @@ import sys
 if __name__ == '__main__':
     # Build blank board
     time.sleep(5)
-    print("hello")
     game_board = Board.Board()
     cwd = os.getcwd()
     parent = os.path.join(cwd, os.path.join(os.path.dirname(__file__)))
     player_color = sys.stdin.readline()
-    while player_color != 'w\n' or player_color != 'b\n':
-        player_color = sys.stdin.readline()
+    # while player_color != 'w\n' or player_color != 'b\n':
+    #     player_color = sys.stdin.readline()
     sys.stderr.write(player_color)
     sys.stderr.flush()
     # print(Board.get_board_str(game_board))
@@ -38,6 +37,7 @@ if __name__ == '__main__':
     player_move = sys.stdin.readline()
     sys.stderr.write(player_move)
     sys.stderr.flush()
+    piece_clicked_coords = []
     while 'quit' not in player_move:
         # This checks if the gui is merely wishing for possible moves for a given piece
         if "!!" not in player_move:
@@ -48,18 +48,23 @@ if __name__ == '__main__':
             moves = ChessLogic.get_target_coordinate_from_algebraic_moves(moves, player_color)
             for move in moves:
                 sys.stdout.write(move)
+                sys.stderr.write(move)
             sys.stdout.write('\n')
             sys.stdout.flush()
+            sys.stderr.write('\n')
+            sys.stderr.flush()
             player_move = sys.stdin.readline()
             sys.stderr.write(player_move)
             sys.stderr.flush()
+            piece_clicked_coords = [row, col]
             continue
 
+        time.sleep(5)
         # otherwise get move in row,col,row,col!! form where first two are piece, second two are target location
         coords = player_move.split('!!')[0]
         coords = coords.split(',')
-        piece = game_board.board[coords[0]][coords[1]]
-        move = piece.get_move(board=game_board, i=coords[2], j=coords[3], ignore_check=True)
+        piece = game_board.board[piece_clicked_coords[0]][piece_clicked_coords[1]]
+        move = piece.get_move(board=game_board, i=int(coords[0]), j=int(coords[1]), ignore_check=True)
         game_board.read_and_update(move)
         engine.update_opponent_move(move)
 
