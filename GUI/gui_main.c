@@ -27,6 +27,7 @@
 
 static bool PLAYER_IS_WHITE = false;
 static bool PIECE_PREVIOUSLY_CLICKED = false;
+static bool WAITING_FOR_INPUT = false;
 static int  PIECE_PREVIOUSLY_CLICKED_I = 0;
 static int  PIECE_PREVIOUSLY_CLICKED_J = 0;
 static GtkWidget * BOARD_IMAGE_PTR = NULL;
@@ -114,6 +115,7 @@ void delete_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squares)
                 // remove child from board background
                 // TODO FIX BELOW. IT IS THE INCORRECT METHOD TO DELETE WIDGETS
                 gtk_container_remove(GTK_CONTAINER(board_gui->board_background), GTK_WIDGET(child));
+
             }
         }
     }
@@ -156,6 +158,8 @@ GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squa
 
 void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
     // if buffer len is 4, then a standard move was made, if buffer len is 5, then a pawn promotion occured
+    fprintf(stderr, buffer);
+    fflush(stderr);
     if (buffer_len == 4 || buffer_len == 5){
         int start_row, start_col, end_row, end_col;
         start_row = buffer[0] - '0';
@@ -174,9 +178,9 @@ void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
             char color[10];
             char piece[20];
             if (PLAYER_IS_WHITE)
-                strcpy(color, "white");
-            else
                 strcpy(color, "black");
+            else
+                strcpy(color, "white");
             if (buffer[4] == 'Q')
                 strcpy(piece, "queen");
             else if (buffer[4] == 'R')
@@ -276,7 +280,21 @@ void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
 }
 
 
-gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
+gboolean opponent_update(GtkWidget *window, GdkEvent * event, gpointer data){
+    if (WAITING_FOR_INPUT){
+        BoardGUI * board_gui = (BoardGUI *)data;
+        char buffer[MAX_BUFF];
+        fgets(buffer, MAX_BUFF, stdin);
+        int buffer_len;
+        buffer_len = strlen(buffer);
+        update_opponent_move(board_gui, buffer, buffer_len - 1);
+        WAITING_FOR_INPUT = false;
+        return true;
+    }
+    return false;
+}
+
+gboolean move_made(GtkWidget *window, GdkEvent * event, gpointer data){
     BoardGUI * board_gui = (BoardGUI *)data;
     Board * board = board_gui->board;
     bool queue_print = false;
@@ -294,7 +312,6 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         row = y_img_coord_to_black_row(y);
         col = x_img_coord_to_black_col(x);
     }
-
     if (PIECE_PREVIOUSLY_CLICKED){
         GtkWidget * clicked_square;
         bool clicked_flag = false;
@@ -321,9 +338,16 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
             get_window_coords(&y_coord, &x_coord, row, col);
             gtk_fixed_move(GTK_FIXED(board_gui->board_background), originally_clicked_piece, x_coord, y_coord);
             queue_print = true;
-            // Update board state internals, but I don't think I need these anymore
-//            board_gui->board->pieces[PIECE_PREVIOUSLY_CLICKED_I]
-            // TODO WILL NEED TO UPDATE THESE INTERNALS FOR TRACKING WHICH PIECE WAS CLICKED.
+            // TODO WILL NEED TO UPDATE THESE INTERNALS FOR TRACKING WHICH PIECE WAS CLICKED. NEED TO WORRY ABOUT CASTLING HERE
+            int i;
+            Tile * pieces = board_gui->board->pieces;
+
+            for (i = 0; i < 32; i++){
+                if (pieces[i].row == PIECE_PREVIOUSLY_CLICKED_I && pieces[i].col == PIECE_PREVIOUSLY_CLICKED_J ){
+                    pieces[i].row = row;
+                    pieces[i].col = col;
+                }
+            }
         }
 
         // Remove all pink squares
@@ -357,20 +381,40 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         gtk_widget_show_all(GTK_WIDGET(board_gui->board_background));
         PIECE_PREVIOUSLY_CLICKED = false;
         if (queue_print){
-            printf("%d,%d!!\n", row, col);
+            printf("%d,%d,%d,%d!!\n", PIECE_PREVIOUSLY_CLICKED_I, PIECE_PREVIOUSLY_CLICKED_J, row, col);
             fflush(stdout);
         }
         // Now wait for python to make opponent move and then return true, if user clicked valid button
         if (clicked_flag){
-            char buffer[MAX_BUFF];
-            fgets(buffer, MAX_BUFF, stdin);
-            int buffer_len;
-            buffer_len = strlen(buffer);
-            update_opponent_move(board_gui, buffer, buffer_len);
+            WAITING_FOR_INPUT = true;
+            return false;
         }
-        return true;
+        return false;
+    }
+    return false;
+}
 
-    } else{
+
+gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
+    BoardGUI * board_gui = (BoardGUI *)data;
+    Board * board = board_gui->board;
+    bool queue_print = false;
+
+    gdouble x;
+    gdouble y;
+    gdk_event_get_coords(event, &x, &y);
+    // find x_, y_ coords in board
+    int row, col;
+    if (PLAYER_IS_WHITE){
+        row = y_img_coord_to_white_row(y);
+        col = x_img_coord_to_white_col(x);
+    }
+    else{
+        row = y_img_coord_to_black_row(y);
+        col = x_img_coord_to_black_col(x);
+    }
+
+    if (!PIECE_PREVIOUSLY_CLICKED){
         // Find piece at click
         Tile * piece;
         piece = NULL;
@@ -400,6 +444,8 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         // return true to stop propagating event signal
         return true;
     }
+    else
+        return false;
 }
 
 void draw_initial_pieces(BoardGUI * board_gui){
@@ -450,6 +496,8 @@ void start_game(GtkWidget *button, gpointer data){
 
     // Add handler for click
      g_signal_connect (window, "button-press-event", G_CALLBACK(piece_clicked), board_gui);
+     g_signal_connect (window, "button-press-event", G_CALLBACK(move_made), board_gui);
+     g_signal_connect_after (window, "button-press-event", G_CALLBACK(opponent_update), board_gui);
 }
 
 void start_as_white(GtkWidget *white_button, gpointer data){

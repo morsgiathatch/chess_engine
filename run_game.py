@@ -34,11 +34,11 @@ if __name__ == '__main__':
                         weights_path=parent + '/Engine/nn_data/black/model.h5')
     # !! is a character meaning that a player has made a move, otherwise it is a query of possible moves for piece at
     # "row,col"
-    player_move = sys.stdin.readline()
-    sys.stderr.write(player_move)
-    sys.stderr.flush()
-    piece_clicked_coords = []
+    player_move = ''
     while 'quit' not in player_move:
+        player_move = sys.stdin.readline()
+        sys.stderr.write(player_move)
+        sys.stderr.flush()
         # This checks if the gui is merely wishing for possible moves for a given piece
         if "!!" not in player_move:
             terms = player_move.split(',')
@@ -53,18 +53,14 @@ if __name__ == '__main__':
             sys.stdout.flush()
             sys.stderr.write('\n')
             sys.stderr.flush()
-            player_move = sys.stdin.readline()
-            sys.stderr.write(player_move)
-            sys.stderr.flush()
-            piece_clicked_coords = [row, col]
             continue
 
-        time.sleep(5)
+        # time.sleep(5)
         # otherwise get move in row,col,row,col!! form where first two are piece, second two are target location
         coords = player_move.split('!!')[0]
         coords = coords.split(',')
-        piece = game_board.board[piece_clicked_coords[0]][piece_clicked_coords[1]]
-        move = piece.get_move(board=game_board, i=int(coords[0]), j=int(coords[1]), ignore_check=True)
+        piece = game_board.board[int(coords[0])][int(coords[1])]
+        move = piece.get_move(board=game_board, i=int(coords[2]), j=int(coords[3]), ignore_check=True)
         game_board.read_and_update(move)
         engine.update_opponent_move(move)
 
@@ -75,10 +71,7 @@ if __name__ == '__main__':
         game_board.read_and_update(engine_move)
         sys.stdout.write(opponent_coord_move + '\n')
         sys.stdout.flush()
-        sys.stderr.write(opponent_coord_move)
-        sys.stderr.flush()
-        player_move = input()
-        sys.stderr.write(player_move)
+        sys.stderr.write(opponent_coord_move + '\n')
         sys.stderr.flush()
 
 else:
