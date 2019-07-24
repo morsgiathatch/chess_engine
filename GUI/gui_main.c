@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "board.h"
 
 #define BORDER_WIDTH 20.0
@@ -67,8 +68,8 @@ void get_board_coords(int * row, int * col, int x, int y){
 
 Tile * get_piece_at(int row, int col, Board * board){
     int i;
+    Tile * piece;
     for (i = 0; i < 32; i++){
-        Tile * piece;
         piece = &(board->pieces[i]);
         if (piece->row == row && piece->col == col)
             return piece;
@@ -107,15 +108,13 @@ void delete_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squares)
 
             int row_, col_;
             get_board_coords(&row_, &col_, x, y);
+            // TODO CHECK THAT THIS DELETION METHOD IS NOT BROKEN
             if (col_ == col && row_ == row){
+                gtk_widget_destroy(child);
                 if (pink_squares)
                     board_gui->pink_squares = g_list_remove(board_gui->pink_squares, child);
                 else
                     board_gui->pieces = g_list_remove(board_gui->pieces, child);
-                // remove child from board background
-                // TODO FIX BELOW. IT IS THE INCORRECT METHOD TO DELETE WIDGETS
-                gtk_container_remove(GTK_CONTAINER(board_gui->board_background), GTK_WIDGET(child));
-
             }
         }
     }
@@ -156,6 +155,17 @@ GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squa
     return NULL;
 }
 
+void update_board_internals(BoardGUI * board_gui, int from_row, int from_col, int to_row, int to_col){
+    int i;
+    Tile * pieces = board_gui->board->pieces;
+    for (i = 0; i < 32; i++){
+        if (pieces[i].row == from_row && pieces[i].col == from_col){
+            pieces[i].row = to_row;
+            pieces[i].col = to_col;
+        }
+    }
+}
+
 void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
     // if buffer len is 4, then a standard move was made, if buffer len is 5, then a pawn promotion occured
     fprintf(stderr, buffer);
@@ -194,9 +204,21 @@ void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
             GtkWidget * new_piece;
             new_piece = gtk_image_new_from_file (realpath(piece_img_path, NULL));
             add_widget_at(end_row, end_col, new_piece, board_gui);
+            update_board_internals(board_gui, start_row, start_col, end_row, end_col);
+            // reset tile image to new image
+            int i;
+            Tile * pieces = board_gui->board->pieces;
+            for (i = 0; i < 32; i++){
+                if (pieces[i].row == end_row && pieces[i].col == end_col){
+                    snprintf(pieces[i].path_to_img, sizeof(piece_img_path), piece_img_path);
+                    break;
+                }
+            }
         }
-        else
+        else {
             gtk_fixed_move(GTK_FIXED(board_gui->board_background), piece, x_coord, y_coord);
+            update_board_internals(board_gui, start_row, start_col, end_row, end_col);
+        }
 
     }
     // if buffer len is 6, then en passant occured
@@ -216,6 +238,7 @@ void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
         int x_coord, y_coord;
         get_window_coords(&y_coord, &x_coord, end_row, end_col);
         gtk_fixed_move(GTK_FIXED(board_gui->board_background), piece, x_coord, y_coord);
+        update_board_internals(board_gui, start_row, start_col, end_row, end_col);
     }
     // if buffer len is 8, then castling occured
     else if (buffer_len == 8){
@@ -232,11 +255,9 @@ void update_opponent_move(BoardGUI * board_gui, char * buffer, int buffer_len){
             int x_coord, y_coord;
             get_window_coords(&y_coord, &x_coord, end_row, end_col);
             gtk_fixed_move(GTK_FIXED(board_gui->board_background), piece, x_coord, y_coord);
+            update_board_internals(board_gui, start_row, start_col, end_row, end_col);
         }
     }
-
-    // Need to handle piece promotion now
-
     gtk_widget_show_all(GTK_WIDGET(board_gui->board_background));
 }
 
@@ -245,9 +266,12 @@ void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
     GtkFixed * board_background = GTK_FIXED(board_gui->board_background);
     int i;
     GtkWidget * child;
-
+    fprintf(stderr, "coloring possible moves. received coordinates %s", buffer);
+    fflush(stderr);
     for (i = 0; i < buffer_len; i += 2){
         // Get row/col and convert to int
+        fprintf(stderr, "what the fuck\n");
+        fflush(stderr);
         int row, col;
         row = buffer[i] - '0';
         col = buffer[i + 1] - '0';
@@ -260,20 +284,36 @@ void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
         pink_square = gtk_image_new_from_file (realpath("../GUI/imgs/pink_square.png", NULL));
 
         if (piece == NULL){
+            fprintf(stderr, "No piece found at index %d, %d during coloring\n", row, col);
+            fflush(stderr);
             board_gui->pink_squares = g_list_append(board_gui->pink_squares, pink_square);
             gtk_fixed_put(board_background, pink_square, pink_square_j(j_), pink_square_i(i_));
         }
         else {
+            fprintf(stderr, "found existing piece during coloring!\n");
+            fflush(stderr);
             GtkWidget * overlay;
             overlay = gtk_fixed_new();
             gtk_fixed_put(GTK_FIXED(overlay), GTK_WIDGET(pink_square), 0, 0);
 
             Tile * tile = get_piece_at(row, col, board_gui->board);
+            if (tile != NULL){
+                fprintf(stderr, "found existing tile during coloring!\n");
+                fflush(stderr);
+            }
+            else{
+                fprintf(stderr, "error occured finding tile!\n");
+                fflush(stderr);
+            }
             GtkWidget * piece_img;
             piece_img = gtk_image_new_from_file(realpath(tile->path_to_img, NULL));
             gtk_fixed_put(GTK_FIXED(overlay), piece_img, 0, 2);
             gtk_fixed_put(board_background, GTK_WIDGET(overlay), pink_square_j(j_), pink_square_i(i_));
+            fprintf(stderr, "Attempting to add overlay to pink pieces\n");
+            fflush(stderr);
             board_gui->pink_squares = g_list_append(board_gui->pink_squares, overlay);
+            fprintf(stderr, "Successfully added overlay to pink pieces\n");
+            fflush(stderr);
         }
     }
     gtk_widget_show_all(GTK_WIDGET(board_background));
@@ -338,16 +378,40 @@ gboolean move_made(GtkWidget *window, GdkEvent * event, gpointer data){
             get_window_coords(&y_coord, &x_coord, row, col);
             gtk_fixed_move(GTK_FIXED(board_gui->board_background), originally_clicked_piece, x_coord, y_coord);
             queue_print = true;
-            // TODO WILL NEED TO UPDATE THESE INTERNALS FOR TRACKING WHICH PIECE WAS CLICKED. NEED TO WORRY ABOUT CASTLING HERE
             int i;
             Tile * pieces = board_gui->board->pieces;
 
             for (i = 0; i < 32; i++){
                 if (pieces[i].row == PIECE_PREVIOUSLY_CLICKED_I && pieces[i].col == PIECE_PREVIOUSLY_CLICKED_J ){
+                    // check if it is a king and if the column to move == 2
+                    char piece_img_path[128], color[10];
+                    if (PLAYER_IS_WHITE)
+                        strcpy(color, "white");
+                    else
+                        strcpy(color, "black");
+                    snprintf(piece_img_path, sizeof(piece_img_path), "../GUI/imgs/%s_king.png", color);
+                    if (strcmp(pieces[i].path_to_img, realpath(piece_img_path, NULL)) == 0 && abs(pieces[i].col - col) == 2){
+                        GtkWidget * rook;
+                        int rook_x, rook_y;
+                        // Is rook on left?
+                        if (pieces[i].col - col > 0){
+                            rook = get_widget_at(PIECE_PREVIOUSLY_CLICKED_I, 0, board_gui, false);
+                            get_window_coords(&rook_y, &rook_x, PIECE_PREVIOUSLY_CLICKED_I, 3);
+                            update_board_internals(board_gui, PIECE_PREVIOUSLY_CLICKED_I, 0, PIECE_PREVIOUSLY_CLICKED_I, 3);
+                        } // rook on right
+                        else{
+                            rook = get_widget_at(PIECE_PREVIOUSLY_CLICKED_I, 7, board_gui, false);
+                            get_window_coords(&rook_y, &rook_x, PIECE_PREVIOUSLY_CLICKED_I, 5);
+                            update_board_internals(board_gui, PIECE_PREVIOUSLY_CLICKED_I, 7, PIECE_PREVIOUSLY_CLICKED_I, 5);
+                        }
+                        gtk_fixed_move(GTK_FIXED(board_gui->board_background), rook, rook_x, rook_y);
+                    }
                     pieces[i].row = row;
                     pieces[i].col = col;
                 }
             }
+            fprintf(stderr, "Board internals successfully updated\n");
+            fflush(stderr);
         }
 
         // Remove all pink squares
@@ -382,7 +446,9 @@ gboolean move_made(GtkWidget *window, GdkEvent * event, gpointer data){
         PIECE_PREVIOUSLY_CLICKED = false;
         if (queue_print){
             printf("%d,%d,%d,%d!!\n", PIECE_PREVIOUSLY_CLICKED_I, PIECE_PREVIOUSLY_CLICKED_J, row, col);
+            fprintf(stderr, "%d,%d,%d,%d!!\n", PIECE_PREVIOUSLY_CLICKED_I, PIECE_PREVIOUSLY_CLICKED_J, row, col);
             fflush(stdout);
+            fflush(stderr);
         }
         // Now wait for python to make opponent move and then return true, if user clicked valid button
         if (clicked_flag){
@@ -422,7 +488,9 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         for (i = 0; i < 32; i++){
             if ((board->pieces)[i].row == row && (board->pieces)[i].col == col){
                 printf("%d,%d\n", row, col);
+                fprintf(stderr, "%d,%d\n", row, col);
                 fflush(stdout);
+                fflush(stderr);
                 piece = &(board->pieces[i]);
                 break;
             }
@@ -438,6 +506,8 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         fprintf(stderr, buffer);
         // read each move and update color of board.
         color_possible_moves(board_gui, buffer, buffer_len - 1);
+        fprintf(stderr, "succesfully returning from move coloring\n");
+        fflush(stderr);
         PIECE_PREVIOUSLY_CLICKED = true;
         PIECE_PREVIOUSLY_CLICKED_I = row;
         PIECE_PREVIOUSLY_CLICKED_J = col;

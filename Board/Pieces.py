@@ -300,6 +300,11 @@ class King:
             if not isinstance(board.board[i][j], NullPiece):
                 return 'K' + get_coordinate_move(self, i, j, capture=True, board=board, ignore_check=ignore_check)
             else:
+                # check for queenside castle
+                if self.i - i == 2:
+                    return 'O-O-O'
+                elif i - self.i == 2:
+                    return 'O-O'
                 return 'K' + get_coordinate_move(self, i, j, capture=False, board=board, ignore_check=ignore_check)
         return None
 
@@ -313,6 +318,15 @@ class King:
         # Cannot move to space with same color
         if board.board[i][j].color == self.color and not isinstance(board.board[i][j], NullPiece):
             return False
+
+        # check for castling
+        if self.i - i == 2 and self.j == j:
+            if self.can_castle_queenside(board):
+                return True
+
+        if i - self.i == 2 and self.j == j:
+            if self.can_castle_kingside(board):
+                return True
 
         # narrow down false moves. Mere combination of bishop and rook stuff
         if abs(self.i - i) > 1 or abs(self.j - j) > 1:

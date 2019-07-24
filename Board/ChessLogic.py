@@ -109,8 +109,8 @@ def move_bureaucratic_piece(algebraic_move, board, color):
 
     # Move piece and capture with complex ambiguity. Should also almost never happen
     elif re.match('[NBRQK][a-h][1-8]x[a-h][1-8]', algebraic_move):
-        i = Board.Board.algebra_to_index_map[algebraic_move[4]]
-        j = Board.Board.algebra_to_index_map[algebraic_move[3]]
+        i = Board.Board.algebra_to_index_map[algebraic_move[5]]
+        j = Board.Board.algebra_to_index_map[algebraic_move[4]]
 
         end_args = algebraic_move[6:]
         pos_args = algebraic_move[1:3]
@@ -242,6 +242,8 @@ def convert_coordinate_form_to_algebraic_form(coordinate_form_moves):
 
 
 def get_target_coordinate_from_algebraic_moves(algebraic_moves, color):
+    sys.stderr.write('player color is ' + color + '\n')
+    sys.stderr.flush()
     target_coords = []
     for algebraic_move in algebraic_moves:
         coords = re.findall('[a-h][1-8]', algebraic_move)
@@ -252,12 +254,12 @@ def get_target_coordinate_from_algebraic_moves(algebraic_moves, color):
         # this means a castling occurred
         else:
             if 'O-O-O' in algebraic_move:           # queenside castle
-                if color == 'w':
+                if 'w' in color:
                     target_coords.append('02')
                 else:
                     target_coords.append('72')
             else:
-                if color == 'w':                    # kingside castle
+                if 'w' in color:                    # kingside castle
                     target_coords.append('06')
                 else:
                     target_coords.append('76')
@@ -332,12 +334,12 @@ def get_move_coordinates_from_algebraic_move(algebraic_move, color, board):
     # this means a castling occurred
     else:
         if 'O-O-O' in algebraic_move:              # queenside castle
-            if color == 'w':
+            if 'w' in color:
                 return '04020003'
             else:
                 return '74727073'
         else:
-            if color == 'w':                       # kingside castle
+            if 'w' in color:                       # kingside castle
                 return '04060705'
             else:
                 return '74767775'

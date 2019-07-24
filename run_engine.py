@@ -61,6 +61,8 @@ if __name__ == '__main__':
         coords = coords.split(',')
         piece = game_board.board[int(coords[0])][int(coords[1])]
         move = piece.get_move(board=game_board, i=int(coords[2]), j=int(coords[3]), ignore_check=True)
+        sys.stderr.write('opponent read move as ' + move + '\n')
+        sys.stderr.flush()
         game_board.read_and_update(move)
         engine.update_opponent_move(move)
 

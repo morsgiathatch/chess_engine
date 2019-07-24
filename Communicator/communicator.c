@@ -2,6 +2,7 @@
 #include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <stdio.h>
 
 
 int main(int argc, char ** argv){
@@ -27,7 +28,7 @@ int main(int argc, char ** argv){
         dup2(fds[1], 1);
         close(fds[0]);
         close(fds2[1]);
-        execlp("python3", "python3", "../run_game.py", NULL);
+        execlp("python3", "python3", "../run_engine.py", NULL);
     }
 
     close(fds[0]);
@@ -35,4 +36,6 @@ int main(int argc, char ** argv){
     close(fds2[0]);
     close(fds2[1]);
     while ((wpid = wait(&status)) > 0){}
+    fprintf(stderr, "Exited with status %d\n", WEXITSTATUS(status));
+    fflush(stderr);
 }
