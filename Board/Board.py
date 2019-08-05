@@ -2,6 +2,7 @@ import copy
 import re
 from Board import Pieces
 from Board import ChessLogic
+import sys
 
 # Chess board is initialized in the following format
 # 7 r n b q k b n r    Black side
@@ -191,14 +192,22 @@ class Board:
             if self.can_move_without_self_check(piece, i, j):
                 pieces_that_can_move_to_index.append(piece)
 
+        # for piece in pieces_that_can_move_to_index:
+        #     sys.stderr.write('piece at %d,%d can move to index %d,%d\n' % (piece.i, piece.j, i, j))
+        #     sys.stderr.flush()
+
         if len(pieces_that_can_move_to_index) == 1:
             return pieces_that_can_move_to_index[0]
 
         # Now need to use pos_args to trim pieces_that_can_move_to_index
+        if 'x' in pos_args:
+            pos_args = pos_args.replace('x', '')
         for piece in pieces_that_can_move_to_index:
             if pos_args is not None and pos_args in (str(Board.col_index_to_algebra[piece.j]) + str(Board.row_index_to_algebra[piece.i])):
                 return piece
 
+        # sys.stderr.write('I SHOULD NOT BE HAPPENING. pos args are %s\n' % (pos_args))
+        # sys.stderr.flush()
         # This should not occur maybe?
         return Pieces.NullPiece(i, j, 1)
 

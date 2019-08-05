@@ -6,6 +6,7 @@
 typedef struct Tile{
     int row;
     int col;
+    char piece_type;
     char * path_to_img;
 }Tile;
 
@@ -14,7 +15,7 @@ typedef struct Board{
 }Board;
 
 Board * initialize_board();
-void initialize_minor_piece(Board *, const char *, const char *, int *);
+void initialize_minor_piece(Board *, const char *, const char *, int *, char);
 void initialize_pawns(Board *);
 void initialize_rooks(Board *);
 void initialize_knights(Board *);

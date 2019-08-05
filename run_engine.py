@@ -65,12 +65,18 @@ if __name__ == '__main__':
         sys.stderr.flush()
         game_board.read_and_update(move)
         engine.update_opponent_move(move)
+        sys.stderr.write(Board.get_board_str(game_board) + '\n')
+        sys.stderr.flush()
 
         # have engine move and convert algebraic move to coordinate to pass to gui
         engine_move = engine.make_move()
         # convert move BEFORE updating board, that way we can check current board state
         opponent_coord_move = ChessLogic.get_move_coordinates_from_algebraic_move(engine_move, opponent_color, game_board)
+        sys.stderr.write('engine made move %s\n' %(engine_move))
+        sys.stderr.flush()
         game_board.read_and_update(engine_move)
+        sys.stderr.write(Board.get_board_str(game_board) + '\n')
+        sys.stderr.flush()
         sys.stdout.write(opponent_coord_move + '\n')
         sys.stdout.flush()
         sys.stderr.write(opponent_coord_move + '\n')
