@@ -405,3 +405,13 @@ def convert_compact_string_to_normal(vec_str):
         true_terms += true_term
 
     return true_terms
+
+
+def get_board_state_str(board):
+    ret_str = ''
+    for i in range(0, 8):
+        for j in range(0, 8):
+            color = 'w' if board.board[i][j].color == 0 else 'b'
+            ret_str += color + board.board[i][j].symbol
+
+    return ret_str
