@@ -33,6 +33,8 @@ if __name__ == '__main__':
         opponent_color = 'b'
         engine = Engine(model_path=parent + '/Engine/nn_data/black/model.json',
                         weights_path=parent + '/Engine/nn_data/black/model.h5')
+        sys.stderr.write('opponent is black\n')
+        sys.stderr.flush()
     # !! is a character meaning that a player has made a move, otherwise it is a query of possible moves for piece at
     # "row,col"
     player_move = ''
@@ -68,24 +70,19 @@ if __name__ == '__main__':
         engine.update_opponent_move(move)
         sys.stdout.write(Board.get_board_state_str(game_board) + '\n')
         sys.stdout.flush()
-        sys.stderr.write(Board.get_board_state_str(game_board) + ':' + str(len(Board.get_board_state_str(game_board))) + '\n')
+        sys.stderr.write(Board.get_board_state_str(game_board) + '\n' + Board.get_board_str(game_board))
         sys.stderr.flush()
 
         is_opponent_ready = sys.stdin.readline()
         if 'ready' in is_opponent_ready:
             # have engine move and convert algebraic move to coordinate to pass to gui
             engine_move = engine.make_move()
-            # convert move BEFORE updating board, that way we can check current board state
-            # opponent_coord_move = ChessLogic.get_move_coordinates_from_algebraic_move(engine_move, opponent_color, game_board)
             game_board.read_and_update(engine_move)
+            sys.stderr.write('AI made move: %s\n' % (engine_move))
             sys.stdout.write(Board.get_board_state_str(game_board) + '\n')
             sys.stdout.flush()
-            sys.stderr.write(Board.get_board_state_str(game_board) + '\n')
+            sys.stderr.write(Board.get_board_state_str(game_board) + '\n' + Board.get_board_str(game_board))
             sys.stderr.flush()
-            # sys.stdout.write(opponent_coord_move + '\n')
-            # sys.stdout.flush()
-            # sys.stderr.write(opponent_coord_move + '\n')
-            # sys.stderr.flush()
         else:
             sys.stderr.write('Error from gui: not ready to read board state')
             sys.stderr.flush()

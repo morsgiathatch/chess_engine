@@ -6,8 +6,54 @@ import sys
 
 def move_pawn(algebraic_move, board, color, turn_number):
     # Go case by case
+    # The first few are additional cases from using coordinate notation internal to the program for convenience
+    if re.match('[a-h][1-8][a-h][1-8]', algebraic_move) and '=' not in algebraic_move:
+        i = Board.Board.algebra_to_index_map[algebraic_move[3]]
+        j = Board.Board.algebra_to_index_map[algebraic_move[2]]
+        piece = board.board[Board.Board.algebra_to_index_map[algebraic_move[1]]][Board.Board.algebra_to_index_map[algebraic_move[0]]]
+        update_move_piece(board=board, piece=piece, i=i, j=j)
+
+    elif re.match('[a-h][1-8]x[a-h][1-8]', algebraic_move) and '=' not in algebraic_move:
+        i = Board.Board.algebra_to_index_map[algebraic_move[4]]
+        j = Board.Board.algebra_to_index_map[algebraic_move[3]]
+
+        pos_args = algebraic_move[0:2]
+        end_args = algebraic_move[5:]
+        piece = board.get_piece_that_can_move_to_index(board.get_references('p', color), i, j, end_args=end_args,
+                                                       pos_args=pos_args)
+        # Take into account en passant
+        if color == 0 and isinstance(board.board[i][j], Pieces.NullPiece):
+            update_en_passant(board=board, attk_piece=piece, def_piece=board.board[i - 1][j],
+                              color=color)
+        elif color == 1 and isinstance(board.board[i][j], Pieces.NullPiece):
+            update_en_passant(board=board, attk_piece=piece, def_piece=board.board[i + 1][j],
+                              color=color)
+        else:
+            update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j])
+
+    elif re.match('[a-h][1-8][a-h][1-8]=', algebraic_move[0:5]):
+        i = Board.Board.algebra_to_index_map[algebraic_move[3]]
+        j = Board.Board.algebra_to_index_map[algebraic_move[2]]
+        piece = board.board[Board.Board.algebra_to_index_map[algebraic_move[1]]][Board.Board.algebra_to_index_map[algebraic_move[0]]]
+        board.board[piece.i][piece.j] = Pieces.NullPiece(piece.i, piece.j, 1)
+        board.delete_piece_from_references(piece.i, piece.j, color)
+        board.get_promoted_piece(algebraic_move[3], i, j, color, turn_number=turn_number)
+        board.turn_number += 1
+
+    elif re.match('[a-h][1-8]x[a-h][1-8]=', algebraic_move):
+        i = Board.Board.algebra_to_index_map[algebraic_move[4]]
+        j = Board.Board.algebra_to_index_map[algebraic_move[3]]
+        pos_args = algebraic_move[0:2]
+        end_args = algebraic_move[6:]
+        piece = board.get_piece_that_can_move_to_index(board.get_references('p', color), i, j, end_args=end_args,
+                                                       pos_args=pos_args)
+        update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j])
+        board.delete_piece_from_references(i, j, color)
+        board.get_promoted_piece(algebraic_move[6], i, j, color, turn_number=turn_number)
+        del piece
+
     # Move pawn with no captures and no promotion
-    if re.match('[a-h][1-8]', algebraic_move) and 'x' not in algebraic_move and '=' not in algebraic_move:
+    elif re.match('[a-h][1-8]', algebraic_move) and 'x' not in algebraic_move and '=' not in algebraic_move:
         i = Board.Board.algebra_to_index_map[algebraic_move[1]]
         j = Board.Board.algebra_to_index_map[algebraic_move[0]]
         piece = board.get_piece_that_can_move_to_index(board.get_references('p', color), i, j,
@@ -48,7 +94,7 @@ def move_pawn(algebraic_move, board, color, turn_number):
         i = Board.Board.algebra_to_index_map[algebraic_move[3]]
         j = Board.Board.algebra_to_index_map[algebraic_move[2]]
         pos_args = algebraic_move[0]
-        end_args = algebraic_move[6:]
+        end_args = algebraic_move[5:]
         piece = board.get_piece_that_can_move_to_index(board.get_references('p', color), i, j, end_args=end_args,
                                                        pos_args=pos_args)
         update_capture_piece(board=board, attk_piece=piece, def_piece=board.board[i][j])
@@ -292,7 +338,9 @@ def get_move_coordinates_from_algebraic_move(algebraic_move, color, board):
             def_piece = board.board[row][col]
             if isinstance(def_piece, Pieces.NullPiece):
                 if len(coords) == 1:
-                    piece = board.get_piece_that_can_move_to_index(list_of_pieces=references, i=row, j=col)
+                    pattern_ndx = algebraic_move.index(coords[0])
+                    piece = board.get_piece_that_can_move_to_index(list_of_pieces=references, i=row, j=col,
+                                                                   pos_args=algebraic_move[0: pattern_ndx])
                 else:
                     piece = board.board[piece_row][piece_col]
 
@@ -313,7 +361,10 @@ def get_move_coordinates_from_algebraic_move(algebraic_move, color, board):
         row = Board.Board.algebra_to_index_map[coords[0][1]]
         col = Board.Board.algebra_to_index_map[coords[0][0]]
 
-        piece = board.get_piece_that_can_move_to_index(list_of_pieces=references, i=row, j=col)
+        pattern_ndx = algebraic_move.index(coords[0])
+        piece = board.get_piece_that_can_move_to_index(list_of_pieces=references, i=row, j=col, pos_args=algebraic_move[0: pattern_ndx])
+        sys.stderr.write('piece found that can move to index. its current index is %d,%d\n' % (piece.i, piece.j))
+        # piece = board.get_piece_that_can_move_to_index(list_of_pieces=references, i=row, j=col)
         end_arg = ''
         if '=' in algebraic_move:
             equals_index = algebraic_move.index('=')

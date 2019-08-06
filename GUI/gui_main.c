@@ -127,7 +127,7 @@ void update_board_from_str(BoardGUI * board_gui, char * buffer){
 
             // draw piece at i, j
             int x_coord, y_coord;
-            get_window_coords(&x_coord, &y_coord, j, i);
+            get_window_coords(&y_coord, &x_coord, i, j);
             gtk_fixed_put(GTK_FIXED(board_gui->board_background), GTK_WIDGET(new_piece), x_coord, y_coord);
 
             buffer_counter += 2;

@@ -195,6 +195,8 @@ class Board:
             return pieces_that_can_move_to_index[0]
 
         # Now need to use pos_args to trim pieces_that_can_move_to_index
+        if 'x' in pos_args:
+            pos_args = pos_args.replace('x', '')
         for piece in pieces_that_can_move_to_index:
             if pos_args is not None and pos_args in (str(Board.col_index_to_algebra[piece.j]) + str(Board.row_index_to_algebra[piece.i])):
                 return piece
