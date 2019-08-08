@@ -1,4 +1,5 @@
 from Board import Board
+import sys
 
 
 class Pawn:
@@ -301,9 +302,9 @@ class King:
                 return 'K' + get_coordinate_move(self, i, j, capture=True, board=board, ignore_check=ignore_check)
             else:
                 # check for queenside castle
-                if self.i - i == 2:
+                if self.j - j == 2:
                     return 'O-O-O'
-                elif i - self.i == 2:
+                elif j - self.j == 2:
                     return 'O-O'
                 return 'K' + get_coordinate_move(self, i, j, capture=False, board=board, ignore_check=ignore_check)
         return None
@@ -320,11 +321,11 @@ class King:
             return False
 
         # check for castling
-        if self.i - i == 2 and self.j == j:
+        if self.i == i and self.j - j == 2:
             if self.can_castle_queenside(board):
                 return True
 
-        if i - self.i == 2 and self.j == j:
+        if i == self.i and j - self.j == 2:
             if self.can_castle_kingside(board):
                 return True
 

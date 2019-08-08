@@ -2,6 +2,7 @@ import copy
 import re
 from Board import Pieces
 from Board import ChessLogic
+import sys
 
 # Chess board is initialized in the following format
 # 7 r n b q k b n r    Black side

@@ -137,25 +137,13 @@ void update_board_from_str(BoardGUI * board_gui, char * buffer){
 }
 
 
-Tile * get_piece_at(int row, int col, Board * board){
-    int i;
-    Tile * piece;
-    for (i = 0; i < 32; i++){
-        piece = &(board->pieces[i]);
-        if (piece->row == row && piece->col == col)
-            return piece;
-    }
-    return NULL;
-}
-
-
 GtkWidget * get_widget_at(int row, int col, BoardGUI * board_gui, bool pink_squares){
     GList * children;
     GList * child_;
     if (pink_squares)
         children = board_gui->pink_squares;
     else
-        children = board_gui->pieces;
+        children = gtk_container_get_children(board_gui->board_background);
 
     GtkWidget * child;
 //    fprintf(stderr, "address of board image: %p\n", BOARD_IMAGE_PTR);
@@ -342,8 +330,11 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         piece = NULL;
         piece = get_widget_at(row, col, board_gui, false);
 
-        if (piece == NULL)
+        if (piece == NULL){
+            fprintf(stderr, "CLICKED ON BLANK SQUARE!\n");
+            fflush(stderr);
             return true;
+        }
 
         printf("%d,%d\n", row, col);
         fprintf(stderr, "%d,%d\n", row, col);
