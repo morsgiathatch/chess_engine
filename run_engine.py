@@ -26,7 +26,7 @@ if __name__ == '__main__':
         # opponent_coord_move = ChessLogic.get_move_coordinates_from_algebraic_move(engine_move, opponent_color, game_board)
         game_board.read_and_update(engine_move)
         # sys.stderr.write(opponent_coord_move)
-        sys.stdout.write(Board.get_board_state_str(game_board))
+        sys.stdout.write(Board.get_board_state_str(game_board) + '\n')
         sys.stdout.flush()
 
     else:
@@ -48,6 +48,11 @@ if __name__ == '__main__':
             row = int(terms[0])
             col = int(terms[1])
             moves = game_board.board[row][col].get_moves(game_board, ignore_check=False)
+            for move in moves:
+                sys.stderr.write(move + ',')
+            sys.stderr.write('\n')
+            sys.stderr.flush()
+
             moves = ChessLogic.get_target_coordinate_from_algebraic_moves(moves, player_color)
             for move in moves:
                 sys.stdout.write(move)

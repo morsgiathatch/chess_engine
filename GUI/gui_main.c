@@ -249,24 +249,13 @@ void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
             overlay = gtk_fixed_new();
             gtk_fixed_put(GTK_FIXED(overlay), GTK_WIDGET(pink_square), 0, 0);
 
-            Tile * tile = get_piece_at(row, col, board_gui->board);
-            if (tile != NULL){
-                fprintf(stderr, "found existing tile during coloring!\n");
-                fflush(stderr);
-            }
-            else{
-                fprintf(stderr, "error occured finding tile!\n");
-                fflush(stderr);
-            }
             GtkWidget * piece_img;
-            piece_img = gtk_image_new_from_file(realpath(tile->path_to_img, NULL));
+            GdkPixbuf * piece_buff;
+            piece_buff = gtk_image_get_pixbuf(GTK_IMAGE(piece));
+            piece_img = gtk_image_new_from_pixbuf(piece_buff);
             gtk_fixed_put(GTK_FIXED(overlay), piece_img, 0, 2);
             gtk_fixed_put(board_background, GTK_WIDGET(overlay), pink_square_j(j_), pink_square_i(i_));
-//            fprintf(stderr, "Attempting to add overlay to pink pieces\n");
-//            fflush(stderr);
             board_gui->pink_squares = g_list_append(board_gui->pink_squares, overlay);
-//            fprintf(stderr, "Successfully added overlay to pink pieces\n");
-//            fflush(stderr);
         }
     }
     gtk_widget_show_all(GTK_WIDGET(board_background));
@@ -311,7 +300,7 @@ gboolean move_made(GtkWidget *window, GdkEvent * event, gpointer data){
             fflush(stderr);
 
             update_board_from_str(board_gui, buffer);
-            printf("ready\n");
+            fprintf(stdout, "ready\n");
             fflush(stdout);
             fprintf(stderr, "ready\n");
             fflush(stderr);
@@ -349,21 +338,17 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
 
     if (!PIECE_PREVIOUSLY_CLICKED){
         // Find piece at click
-        Tile * piece;
+        GtkWidget * piece;
         piece = NULL;
-        int i;
-        for (i = 0; i < 32; i++){
-            if ((board->pieces)[i].row == row && (board->pieces)[i].col == col){
-                printf("%d,%d\n", row, col);
-                fprintf(stderr, "%d,%d\n", row, col);
-                fflush(stdout);
-                fflush(stderr);
-                piece = &(board->pieces[i]);
-                break;
-            }
-        }
+        piece = get_widget_at(row, col, board_gui, false);
+
         if (piece == NULL)
             return true;
+
+        printf("%d,%d\n", row, col);
+        fprintf(stderr, "%d,%d\n", row, col);
+        fflush(stdout);
+        fflush(stderr);
 
         // Now need to wait for python part to get possible moves at (row, col) entry
         char buffer[MAX_BUFF];
