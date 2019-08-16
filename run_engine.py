@@ -71,6 +71,17 @@ if __name__ == '__main__':
         move = piece.get_move(board=game_board, i=int(coords[2]), j=int(coords[3]), ignore_check=True)
         sys.stderr.write('opponent read move as ' + move + '\n')
         sys.stderr.flush()
+        # Check for pawn promotion here
+        if str(move[0]).islower() and '8' in move:
+            sys.stderr.write('detected pawn promotion. Sending gui signal\n')
+            sys.stderr.flush()
+            sys.stdout.write('@\n')
+            sys.stdout.flush()
+
+            desired_piece_promotion = sys.stdin.readline()
+            piece_index = str(desired_piece_promotion).index('@') + 1
+            move += '=' + desired_piece_promotion[piece_index]
+
         game_board.read_and_update(move)
         engine.update_opponent_move(move)
         sys.stdout.write(Board.get_board_state_str(game_board) + '\n')

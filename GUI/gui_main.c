@@ -32,14 +32,15 @@ static bool WAITING_FOR_INPUT = false;
 static int  PIECE_PREVIOUSLY_CLICKED_I = 0;
 static int  PIECE_PREVIOUSLY_CLICKED_J = 0;
 static GtkWidget * BOARD_IMAGE_PTR = NULL;
-
+static GtkWidget * WINDOW_PTR = NULL;
+static gulong PIECE_CLICKED_HANDLER_ID = 0;
+static gulong MOVE_MADE_HANDLER_ID = 0;
 
 
 typedef struct BoardGUI{
     Board * board;
     GtkWidget * window;
     GtkWidget * board_background;
-    GList * pieces;
     GList * pink_squares;
 } BoardGUI;
 
@@ -202,6 +203,92 @@ void delete_pink_squares(BoardGUI * board_gui){
     fflush(stderr);
 }
 
+void get_queen(GtkWidget *button, gpointer data){
+    GtkWidget * button_panel = GTK_WIDGET(data);
+    printf("@Q\n");
+    fflush(stdout);
+    fprintf(stderr, "player chose a queen\n");
+    fflush(stderr);
+    gtk_widget_destroy(button_panel);
+    g_signal_handler_unblock (WINDOW_PTR, PIECE_CLICKED_HANDLER_ID);
+    g_signal_handler_unblock (WINDOW_PTR, MOVE_MADE_HANDLER_ID);
+    gtk_main_quit();
+}
+
+void get_rook(GtkWidget *button, gpointer data){
+    GtkWidget * button_panel = GTK_WIDGET(data);
+    printf("@R\n");
+    fflush(stdout);
+    fprintf(stderr, "player chose a rook\n");
+    fflush(stderr);
+    gtk_widget_destroy(button_panel);
+    g_signal_handler_unblock (WINDOW_PTR, PIECE_CLICKED_HANDLER_ID);
+    g_signal_handler_unblock (WINDOW_PTR, MOVE_MADE_HANDLER_ID);
+    gtk_main_quit();
+}
+
+void get_bishop(GtkWidget *button, gpointer data){
+    GtkWidget * button_panel = GTK_WIDGET(data);
+    printf("@B\n");
+    fflush(stdout);
+    fprintf(stderr, "player chose a bishop\n");
+    fflush(stderr);
+    gtk_widget_destroy(button_panel);
+    g_signal_handler_unblock (WINDOW_PTR, PIECE_CLICKED_HANDLER_ID);
+    g_signal_handler_unblock (WINDOW_PTR, MOVE_MADE_HANDLER_ID);
+    gtk_main_quit();
+}
+
+void get_knight(GtkWidget *button, gpointer data){
+    GtkWidget * button_panel = GTK_WIDGET(data);
+    printf("@N\n");
+    fflush(stdout);
+    fprintf(stderr, "player chose a knight\n");
+    fflush(stderr);
+    gtk_widget_destroy(button_panel);
+    g_signal_handler_unblock (WINDOW_PTR, PIECE_CLICKED_HANDLER_ID);
+    g_signal_handler_unblock (WINDOW_PTR, MOVE_MADE_HANDLER_ID);
+    gtk_main_quit();
+}
+
+void pawn_promotion_window_choice(BoardGUI * board_gui){
+    GtkWidget *window;
+    GtkWidget *button_panel;
+    GtkWidget *queen_button;
+    GtkWidget *rook_button;
+    GtkWidget *bishop_button;
+    GtkWidget *knight_button;
+
+    window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    button_panel = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
+    gtk_widget_set_app_paintable(window, TRUE);
+    gtk_container_set_border_width(GTK_CONTAINER (window), (int)BORDER_WIDTH);
+
+    // Add button and button handler
+    queen_button = gtk_button_new_with_label("Queen");
+    rook_button = gtk_button_new_with_label("Rook");
+    bishop_button = gtk_button_new_with_label("Bishop");
+    knight_button = gtk_button_new_with_label("Knight");
+
+    g_signal_connect (queen_button, "clicked", G_CALLBACK (get_queen), window);
+    g_signal_connect (rook_button, "clicked", G_CALLBACK (get_rook), window);
+    g_signal_connect (bishop_button, "clicked", G_CALLBACK (get_bishop), window);
+    g_signal_connect (knight_button, "clicked", G_CALLBACK (get_knight), window);
+
+    gtk_box_pack_start(GTK_BOX(button_panel), queen_button, true, true, 20);
+    gtk_box_pack_start(GTK_BOX(button_panel), rook_button, true, true, 20);
+    gtk_box_pack_start(GTK_BOX(button_panel), bishop_button, true, true, 20);
+    gtk_box_pack_end(GTK_BOX(button_panel), knight_button, true, true, 20);
+    gtk_container_add(GTK_CONTAINER (window), button_panel);
+
+    // Disable other click handlers
+    g_signal_handler_block (board_gui->window, PIECE_CLICKED_HANDLER_ID);
+    g_signal_handler_block (board_gui->window, MOVE_MADE_HANDLER_ID);
+
+    gtk_widget_show_all(window);
+    gtk_main();
+}
+
 
 void color_possible_moves(BoardGUI * board_gui, char * buffer, int buffer_len){
     GtkFixed * board_background = GTK_FIXED(board_gui->board_background);
@@ -274,7 +361,7 @@ gboolean move_made(GtkWidget *window, GdkEvent * event, gpointer data){
         // If user clicked on a pink square
         if (clicked_square != NULL){
             delete_pink_squares(board_gui);
-            // print move to python
+            // print move to controller
             GtkWidget * originally_clicked_piece, * target_tile;
             printf("%d,%d,%d,%d!!\n", PIECE_PREVIOUSLY_CLICKED_I, PIECE_PREVIOUSLY_CLICKED_J, row, col);
             fprintf(stderr, "%d,%d,%d,%d!!\n", PIECE_PREVIOUSLY_CLICKED_I, PIECE_PREVIOUSLY_CLICKED_J, row, col);
@@ -286,6 +373,21 @@ gboolean move_made(GtkWidget *window, GdkEvent * event, gpointer data){
             fgets(buffer, MAX_BUFF, stdin);
             fprintf(stderr, buffer);
             fflush(stderr);
+
+            // first make sure controller doesn't require pawn promotion, denoted by @
+            if (buffer[0] == '@'){
+                char piece_choice;
+                fprintf(stderr, "detected pawn promotion in gui\n");
+                fflush(stderr);
+
+                pawn_promotion_window_choice(board_gui);
+
+                char buffer[MAX_BUFF];
+                fgets(buffer, MAX_BUFF, stdin);
+                fprintf(stderr, buffer);
+                fflush(stderr);
+            }
+
 
             update_board_from_str(board_gui, buffer);
             fprintf(stdout, "ready\n");
@@ -341,7 +443,7 @@ gboolean piece_clicked(GtkWidget *window, GdkEvent * event, gpointer data){
         fflush(stdout);
         fflush(stderr);
 
-        // Now need to wait for python part to get possible moves at (row, col) entry
+        // Now need to wait for controller part to get possible moves at (row, col) entry
         char buffer[MAX_BUFF];
         fgets(buffer, MAX_BUFF, stdin);
         int buffer_len;
@@ -372,7 +474,6 @@ void draw_initial_pieces(BoardGUI * board_gui){
         gtk_fixed_put(GTK_FIXED(board_gui->board_background), piece_img, j_, i_);
 
         // Add image widget to pieces
-        board_gui->pieces = g_list_append(board_gui->pieces, piece_img);
         gtk_widget_show_all(GTK_WIDGET(piece_img));
     }
 
@@ -408,8 +509,9 @@ void start_game(GtkWidget *button, gpointer data){
     gtk_widget_show_all(window);
 
     // Add handler for click
-     g_signal_connect (window, "button-press-event", G_CALLBACK(piece_clicked), board_gui);
-     g_signal_connect (window, "button-press-event", G_CALLBACK(move_made), board_gui);
+     PIECE_CLICKED_HANDLER_ID = g_signal_connect (window, "button-press-event", G_CALLBACK(piece_clicked), board_gui);
+     MOVE_MADE_HANDLER_ID = g_signal_connect (window, "button-press-event", G_CALLBACK(move_made), board_gui);
+     WINDOW_PTR = window;
 }
 
 void start_as_white(GtkWidget *white_button, gpointer data){
@@ -468,7 +570,6 @@ int main(int argc,char *argv[]){
     board_gui->board = board;
     board_gui->board_background = NULL;
     // GList must be initialized to null
-    board_gui->pieces = NULL;
     board_gui->pink_squares = NULL;
 
     g_signal_connect (white_button, "clicked", G_CALLBACK (start_as_white), board_gui);
